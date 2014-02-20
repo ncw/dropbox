@@ -251,12 +251,12 @@ func (self *Dropbox) ChunkedUpload(session *ChunkUploadResponse, input io.ReadCl
 		return nil, err
 	}
 	defer response.Body.Close()
-	if r.N != 0 {
-		return nil, io.EOF
-	}
 
 	if body, err = ioutil.ReadAll(response.Body); err == nil {
 		err = json.Unmarshal(body, &cur)
+	}
+	if r.N != 0 {
+		err = io.EOF
 	}
 	return &cur, err
 }
@@ -265,21 +265,13 @@ func (self *Dropbox) ChunkedUpload(session *ChunkUploadResponse, input io.ReadCl
 func (self *Dropbox) UploadByChunk(input io.ReadCloser, chunksize int, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var err error
 	var cur *ChunkUploadResponse
-	var uploadId string
 
-	if cur, err = self.ChunkedUpload(cur, input, chunksize); err != nil {
-		return nil, err
-	}
-	uploadId = cur.UploadId
 	for err == nil {
-		if cur, err = self.ChunkedUpload(cur, input, chunksize); err != nil {
-			if err == io.EOF {
-				break
-			}
+		if cur, err = self.ChunkedUpload(cur, input, chunksize); err != nil && err != io.EOF {
 			return nil, err
 		}
 	}
-	return self.CommitChunkedUpload(uploadId, dst, overwrite, parentRev)
+	return self.CommitChunkedUpload(cur.UploadId, dst, overwrite, parentRev)
 }
 
 // Upload size bytes from the input reader to the dst path on Dropbox.
