@@ -99,17 +99,17 @@ type RequestError struct {
 }
 
 const (
-	POLL_MIN_TIMEOUT        = 30                // Default number of entries returned by metadata.
-	POLL_MAX_TIMEOUT        = 480               // Default number of entries returned by metadata.
-	DEFAULT_CHUNK_SIZE      = 4 * 1024 * 1024   // Maximum size of a file sendable using files_put.
-	MAX_PUT_FILE_SIZE       = 150 * 1024 * 1024 // Maximum size of a file sendable using files_put.
-	METADATA_LIMIT_MAX      = 25000             // Maximum number of entries returned by metadata.
-	METADATA_LIMIT_DEFAULT  = 10000             // Default number of entries returned by metadata.
-	REVISIONS_LIMIT_MAX     = 1000              // Maximum number of revisions returned by revisions.
-	REVISIONS_LIMIT_DEFAULT = 10                // Default number of revisions returned by revisions.
-	SEARCH_LIMIT_MAX        = 1000              // Maximum number of entries returned by search.
-	SEARCH_LIMIT_DEFAULT    = 1000              // Default number of entries returned by search.
-	DATE_FORMAT             = time.RFC1123Z     // Format to use when decoding a time.
+	PollMinTimeout        = 30                // Default number of entries returned by metadata.
+	PollMaxTimeout        = 480               // Default number of entries returned by metadata.
+	DefaultChunkSize      = 4 * 1024 * 1024   // Maximum size of a file sendable using files_put.
+	MaxPutFileSize        = 150 * 1024 * 1024 // Maximum size of a file sendable using files_put.
+	MetadataLimitMax      = 25000             // Maximum number of entries returned by metadata.
+	MetadataLimitDefault  = 10000             // Default number of entries returned by metadata.
+	RevisionsLimitMax     = 1000              // Maximum number of revisions returned by revisions.
+	RevisionsLimitDefault = 10                // Default number of revisions returned by revisions.
+	SearchLimitMax        = 1000              // Maximum number of entries returned by search.
+	SearchLimitDefault    = 1000              // Default number of entries returned by search.
+	DateFormat            = time.RFC1123Z     // Format to use when decoding a time.
 )
 
 // A metadata entry that describes a file or folder.
@@ -235,9 +235,9 @@ func (self *Dropbox) ChunkedUpload(session *ChunkUploadResponse, input io.ReadCl
 	var r *io.LimitedReader
 
 	if chunksize <= 0 {
-		chunksize = DEFAULT_CHUNK_SIZE
-	} else if chunksize > MAX_PUT_FILE_SIZE {
-		chunksize = MAX_PUT_FILE_SIZE
+		chunksize = DefaultChunkSize
+	} else if chunksize > MaxPutFileSize {
+		chunksize = MaxPutFileSize
 	}
 
 	if session != nil {
@@ -292,7 +292,7 @@ func (self *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overw
 	var params *url.Values
 	var body []byte
 
-	if size > MAX_PUT_FILE_SIZE {
+	if size > MaxPutFileSize {
 		return nil, fmt.Errorf("Could not upload files bigger than 150MB using this method, use UploadByChunk instead")
 	}
 	if dst[0] == '/' {
@@ -572,8 +572,8 @@ func (self *Dropbox) Search(path, query string, fileLimit int, includeDeleted bo
 	var rv []Entry
 	var params *url.Values
 
-	if fileLimit <= 0 || fileLimit > SEARCH_LIMIT_MAX {
-		fileLimit = SEARCH_LIMIT_DEFAULT
+	if fileLimit <= 0 || fileLimit > SearchLimitMax {
+		fileLimit = SearchLimitDefault
 	}
 	params = &url.Values{
 		"query":           {query},
@@ -642,8 +642,8 @@ func (self *Dropbox) LongPollDelta(cursor string, timeout int) (*DeltaPoll, erro
 
 	params = &url.Values{}
 	if timeout != 0 {
-		if timeout < POLL_MIN_TIMEOUT || timeout > POLL_MAX_TIMEOUT {
-			return nil, fmt.Errorf("Timeout out of range [%d; %d]", POLL_MIN_TIMEOUT, POLL_MAX_TIMEOUT)
+		if timeout < PollMinTimeout || timeout > PollMaxTimeout {
+			return nil, fmt.Errorf("Timeout out of range [%d; %d]", PollMinTimeout, PollMaxTimeout)
 		}
 		params.Set("timeout", strconv.FormatInt(int64(timeout), 10))
 	}
@@ -679,9 +679,9 @@ func (self *Dropbox) Metadata(src string, list bool, includeDeleted bool, hash, 
 	var params *url.Values
 
 	if limit <= 0 {
-		limit = METADATA_LIMIT_DEFAULT
-	} else if limit > METADATA_LIMIT_MAX {
-		limit = METADATA_LIMIT_MAX
+		limit = MetadataLimitDefault
+	} else if limit > MetadataLimitMax {
+		limit = MetadataLimitMax
 	}
 	params = &url.Values{
 		"list":            {strconv.FormatBool(list)},
@@ -713,9 +713,9 @@ func (self *Dropbox) CopyRef(src string) (*CopyRef, error) {
 func (self *Dropbox) Revisions(src string, revLimit int) (*[]Entry, error) {
 	var rv []Entry
 	if revLimit <= 0 {
-		revLimit = REVISIONS_LIMIT_DEFAULT
-	} else if revLimit > REVISIONS_LIMIT_MAX {
-		revLimit = REVISIONS_LIMIT_MAX
+		revLimit = RevisionsLimitDefault
+	} else if revLimit > RevisionsLimitMax {
+		revLimit = RevisionsLimitMax
 	}
 	act := strings.Join([]string{"revisions", self.RootDirectory, src}, "/")
 	err := self.doRequest("GET", act,
