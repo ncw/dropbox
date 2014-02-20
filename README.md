@@ -1,18 +1,25 @@
 dropbox
 =======
-
 Go client library for the Dropbox core API with support for uploading and downloading encrypted files.
-
 
 Prerequisite
 ------------
-
-To use this library, you must have a valid client ID (app key) and client secret (app secret) provided by Dropbox.
+To use this library, you must have a valid client ID (app key) and client secret (app secret) provided by Dropbox.<br>
 To register a new client application, please visit https://www.dropbox.com/developers/apps/create
+
+Installation
+------------
+This library depends on a fork of the goauth2 library, it can be installed with the go get command: 
+
+    $ go get code.google.com/p/stacktic-goauth2
+
+This package can be installed with the go get command:
+
+    $ go get github.com/stacktic/dropbox
+
 
 Examples
 --------
-
 This simple 4-step example will show you how to create a folder:
 
     package main
@@ -61,3 +68,10 @@ If you do not know the user token, you can replace step 3 by a call to the Auth 
         }
         // You can now retrieve the token if you want.
         token = db.AccessToken()
+
+If you want a more complete example, please check the following project: https://github.com/stacktic/dbox.
+
+Documentation
+-------------
+
+API documentation can be found here: http://godoc.org/github.com/stacktic/dropbox.
