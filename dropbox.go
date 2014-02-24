@@ -42,13 +42,14 @@ import (
 	"code.google.com/p/stacktic-goauth2/oauth"
 )
 
-var ErrNotAuth = errors.New("Authentication required")
+// ErrNotAuth is the error returned when the OAuth token is not provided
+var ErrNotAuth = errors.New("authentication required")
 
-// Information about the user account.
+// Account represents information about the user account.
 type Account struct {
 	ReferralLink string `json:"referral_link"` // URL for referral.
 	DisplayName  string `json:"display_name"`  // User name.
-	Uid          int    `json:"uid"`           // User account ID.
+	UID          int    `json:"uid"`           // User account ID.
 	Country      string `json:"country"`       // Country ISO code.
 	QuotaInfo    struct {
 		Shared int64 `json:"shared"` // Quota for shared files.
@@ -57,13 +58,13 @@ type Account struct {
 	} `json:"quota_info"`
 }
 
-// Reply of copy_ref.
+// CopyRef represents thr reply of CopyRef.
 type CopyRef struct {
 	CopyRef string `json:"copy_ref"` // Reference to use on fileops/copy.
 	Expires string `json:"expires"`  // Expiration date.
 }
 
-// Reply of delta.
+// DeltaPage represents the reply of delta.
 type DeltaPage struct {
 	Reset   bool         // if true the local state must be cleared.
 	HasMore bool         // if true an other call to delta should be made.
@@ -71,21 +72,21 @@ type DeltaPage struct {
 	Entries []DeltaEntry // List of changed entries.
 }
 
-// Changed entry.
+// DeltaEntry represents the the list of changes for a given path.
 type DeltaEntry struct {
 	Path  string // Path of this entry in lowercase.
 	Entry *Entry // nil when this entry does not exists.
 }
 
-// Reply of longpoll_delta.
+// DeltaPoll represents the reply of longpoll_delta.
 type DeltaPoll struct {
 	Changes bool `json:"changes"` // true if the polled path has changed.
 	Backoff int  `json:"backoff"` // time in second before calling poll again.
 }
 
-// Reply of chunked_upload.
+// ChunkUploadResponse represents the reply of chunked_upload.
 type ChunkUploadResponse struct {
-	UploadId string `json:"upload_id"` // Unique ID of this upload.
+	UploadID string `json:"upload_id"` // Unique ID of this upload.
 	Offset   int    `json:"offset"`    // Size in bytes of already sent data.
 	Expires  string `json:"expires"`   // Expiration time of this upload.
 }
@@ -94,25 +95,36 @@ type ChunkUploadResponse struct {
 // Format may be:
 // {"error": "reason"}
 // {"error": {"param": "reason"}}
-type RequestError struct {
+type requestError struct {
 	Error interface{} `json:"error"` // Description of this error.
 }
 
 const (
-	PollMinTimeout        = 30                // Default number of entries returned by metadata.
-	PollMaxTimeout        = 480               // Default number of entries returned by metadata.
-	DefaultChunkSize      = 4 * 1024 * 1024   // Maximum size of a file sendable using files_put.
-	MaxPutFileSize        = 150 * 1024 * 1024 // Maximum size of a file sendable using files_put.
-	MetadataLimitMax      = 25000             // Maximum number of entries returned by metadata.
-	MetadataLimitDefault  = 10000             // Default number of entries returned by metadata.
-	RevisionsLimitMax     = 1000              // Maximum number of revisions returned by revisions.
-	RevisionsLimitDefault = 10                // Default number of revisions returned by revisions.
-	SearchLimitMax        = 1000              // Maximum number of entries returned by search.
-	SearchLimitDefault    = 1000              // Default number of entries returned by search.
-	DateFormat            = time.RFC1123Z     // Format to use when decoding a time.
+	// PollMinTimeout is the minimum timeout for longpoll
+	PollMinTimeout = 30
+	// PollMaxTimeout is the maximum timeout for longpoll
+	PollMaxTimeout = 480
+	// DefaultChunkSize is the maximum size of a file sendable using files_put.
+	DefaultChunkSize = 4 * 1024 * 1024
+	// MaxPutFileSize is the maximum size of a file sendable using files_put.
+	MaxPutFileSize = 150 * 1024 * 1024
+	// MetadataLimitMax is the maximum number of entries returned by metadata.
+	MetadataLimitMax = 25000
+	// MetadataLimitDefault is the default number of entries returned by metadata.
+	MetadataLimitDefault = 10000
+	// RevisionsLimitMax is the maximum number of revisions returned by revisions.
+	RevisionsLimitMax = 1000
+	// RevisionsLimitDefault is the default number of revisions returned by revisions.
+	RevisionsLimitDefault = 10
+	// SearchLimitMax is the maximum number of entries returned by search.
+	SearchLimitMax = 1000
+	// SearchLimitDefault is the default number of entries returned by search.
+	SearchLimitDefault = 1000
+	// DateFormat is the format to use when decoding a time.
+	DateFormat = time.RFC1123Z
 )
 
-// A metadata entry that describes a file or folder.
+// Entry represents the metadata of a file or folder.
 type Entry struct {
 	Bytes       int     `json:"bytes"`        // Size of the file in bytes.
 	ClientMtime string  `json:"client_mtime"` // Modification time set by the client when added.
@@ -146,7 +158,7 @@ type Dropbox struct {
 	Session       oauth.Transport // OAuth 2.0 session.
 }
 
-// Return a new Dropbox configured.
+// NewDropbox returns a new Dropbox configured.
 func NewDropbox() *Dropbox {
 	return &Dropbox{
 		RootDirectory: "dropbox", // dropbox or sandbox.
@@ -163,36 +175,36 @@ func NewDropbox() *Dropbox {
 	}
 }
 
-// Set the clientid (app_key), clientsecret (app_secret).
+// SetAppInfo sets the clientid (app_key) and clientsecret (app_secret).
 // You have to register an application on https://www.dropbox.com/developers/apps.
-func (self *Dropbox) SetAppInfo(clientid, clientsecret string) {
-	self.Session.Config.ClientId = clientid
-	self.Session.Config.ClientSecret = clientsecret
+func (db *Dropbox) SetAppInfo(clientid, clientsecret string) {
+	db.Session.Config.ClientId = clientid
+	db.Session.Config.ClientSecret = clientsecret
 }
 
-// Set access token to avoid calling Auth method.
-func (self *Dropbox) SetAccessToken(accesstoken string) {
-	self.Session.Token = &oauth.Token{AccessToken: accesstoken}
+// SetAccessToken sets access token to avoid calling Auth method.
+func (db *Dropbox) SetAccessToken(accesstoken string) {
+	db.Session.Token = &oauth.Token{AccessToken: accesstoken}
 }
 
-// Get OAuth access token.
-func (self *Dropbox) AccessToken() string {
-	return self.Session.Token.AccessToken
+// AccessToken returns the OAuth access token.
+func (db *Dropbox) AccessToken() string {
+	return db.Session.Token.AccessToken
 }
 
-// Display URL to authorize this application to connect to your account.
-func (self *Dropbox) Auth() error {
+// Auth displays the URL to authorize this application to connect to your account.
+func (db *Dropbox) Auth() error {
 	var code string
 
 	fmt.Printf("Please visit:\n%s\nEnter the code: ",
-		self.Session.Config.AuthCodeURL(""))
+		db.Session.Config.AuthCodeURL(""))
 	fmt.Scanln(&code)
-	_, err := self.Session.Exchange(code)
+	_, err := db.Session.Exchange(code)
 	return err
 }
 
-// End the chunked upload by giving a name to the UploadID.
-func (self *Dropbox) CommitChunkedUpload(uploadid, dst string, overwrite bool, parentRev string) (*Entry, error) {
+// CommitChunkedUpload ends the chunked upload by giving a name to the UploadID.
+func (db *Dropbox) CommitChunkedUpload(uploadid, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var err error
 	var rawurl string
 	var response *http.Response
@@ -205,16 +217,16 @@ func (self *Dropbox) CommitChunkedUpload(uploadid, dst string, overwrite bool, p
 	}
 
 	params = &url.Values{
-		"locale":    {self.Locale},
+		"locale":    {db.Locale},
 		"upload_id": {uploadid},
 		"overwrite": {strconv.FormatBool(overwrite)},
 	}
 	if len(parentRev) != 0 {
 		params.Set("parent_rev", parentRev)
 	}
-	rawurl = fmt.Sprintf("%s/commit_chunked_upload/%s/%s?%s", self.APIContentURL, self.RootDirectory, dst, params.Encode())
+	rawurl = fmt.Sprintf("%s/commit_chunked_upload/%s/%s?%s", db.APIContentURL, db.RootDirectory, dst, params.Encode())
 
-	if response, err = self.Session.Client().Post(rawurl, "", nil); err != nil {
+	if response, err = db.Session.Client().Post(rawurl, "", nil); err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
@@ -225,8 +237,8 @@ func (self *Dropbox) CommitChunkedUpload(uploadid, dst string, overwrite bool, p
 	return &rv, err
 }
 
-// Send a chunk with a maximum size of chunksize, if there is no session a new one is created.
-func (self *Dropbox) ChunkedUpload(session *ChunkUploadResponse, input io.ReadCloser, chunksize int) (*ChunkUploadResponse, error) {
+// ChunkedUpload sends a chunk with a maximum size of chunksize, if there is no session a new one is created.
+func (db *Dropbox) ChunkedUpload(session *ChunkUploadResponse, input io.ReadCloser, chunksize int) (*ChunkUploadResponse, error) {
 	var err error
 	var rawurl string
 	var cur ChunkUploadResponse
@@ -241,13 +253,13 @@ func (self *Dropbox) ChunkedUpload(session *ChunkUploadResponse, input io.ReadCl
 	}
 
 	if session != nil {
-		rawurl = fmt.Sprintf("%s/chunked_upload?upload_id=%s&offset=%d", self.APIContentURL, session.UploadId, session.Offset)
+		rawurl = fmt.Sprintf("%s/chunked_upload?upload_id=%s&offset=%d", db.APIContentURL, session.UploadID, session.Offset)
 	} else {
-		rawurl = fmt.Sprintf("%s/chunked_upload", self.APIContentURL)
+		rawurl = fmt.Sprintf("%s/chunked_upload", db.APIContentURL)
 	}
 	r = &io.LimitedReader{R: input, N: int64(chunksize)}
 
-	if response, err = self.Session.Client().Post(rawurl, "application/octet-stream", r); err != nil {
+	if response, err = db.Session.Client().Post(rawurl, "application/octet-stream", r); err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
@@ -261,21 +273,21 @@ func (self *Dropbox) ChunkedUpload(session *ChunkUploadResponse, input io.ReadCl
 	return &cur, err
 }
 
-// Upload data from the input reader to the dst path on Dropbox by sending chunks of chunksize.
-func (self *Dropbox) UploadByChunk(input io.ReadCloser, chunksize int, dst string, overwrite bool, parentRev string) (*Entry, error) {
+// UploadByChunk uploads data from the input reader to the dst path on Dropbox by sending chunks of chunksize.
+func (db *Dropbox) UploadByChunk(input io.ReadCloser, chunksize int, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var err error
 	var cur *ChunkUploadResponse
 
 	for err == nil {
-		if cur, err = self.ChunkedUpload(cur, input, chunksize); err != nil && err != io.EOF {
+		if cur, err = db.ChunkedUpload(cur, input, chunksize); err != nil && err != io.EOF {
 			return nil, err
 		}
 	}
-	return self.CommitChunkedUpload(cur.UploadId, dst, overwrite, parentRev)
+	return db.CommitChunkedUpload(cur.UploadID, dst, overwrite, parentRev)
 }
 
-// Upload size bytes from the input reader to the dst path on Dropbox.
-func (self *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overwrite bool, parentRev string) (*Entry, error) {
+// FilesPut uploads size bytes from the input reader to the dst path on Dropbox.
+func (db *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var err error
 	var rawurl string
 	var rv Entry
@@ -285,7 +297,7 @@ func (self *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overw
 	var body []byte
 
 	if size > MaxPutFileSize {
-		return nil, fmt.Errorf("Could not upload files bigger than 150MB using this method, use UploadByChunk instead")
+		return nil, fmt.Errorf("could not upload files bigger than 150MB using this method, use UploadByChunk instead")
 	}
 	if dst[0] == '/' {
 		dst = dst[1:]
@@ -295,13 +307,13 @@ func (self *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overw
 	if len(parentRev) != 0 {
 		params.Set("parent_rev", parentRev)
 	}
-	rawurl = fmt.Sprintf("%s/files_put/%s/%s?%s", self.APIContentURL, self.RootDirectory, dst, params.Encode())
+	rawurl = fmt.Sprintf("%s/files_put/%s/%s?%s", db.APIContentURL, db.RootDirectory, dst, params.Encode())
 
 	if request, err = http.NewRequest("PUT", rawurl, input); err != nil {
 		return nil, err
 	}
 	request.Header.Set("Content-Length", strconv.FormatInt(size, 10))
-	if response, err = self.Session.Client().Do(request); err != nil {
+	if response, err = db.Session.Client().Do(request); err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
@@ -312,8 +324,8 @@ func (self *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overw
 	return &rv, err
 }
 
-// Upload the file located in the src path on the local disk to the dst path on Dropbox.
-func (self *Dropbox) UploadFile(src, dst string, overwrite bool, parentRev string) (*Entry, error) {
+// UploadFile uploads the file located in the src path on the local disk to the dst path on Dropbox.
+func (db *Dropbox) UploadFile(src, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var err error
 	var fd *os.File
 	var fsize int64
@@ -328,11 +340,11 @@ func (self *Dropbox) UploadFile(src, dst string, overwrite bool, parentRev strin
 	} else {
 		return nil, err
 	}
-	return self.FilesPut(fd, fsize, dst, overwrite, parentRev)
+	return db.FilesPut(fd, fsize, dst, overwrite, parentRev)
 }
 
-// Get a thumbnail for an image.
-func (self *Dropbox) Thumbnails(src, format, size string) (io.ReadCloser, int64, *Entry, error) {
+// Thumbnails gets a thumbnail for an image.
+func (db *Dropbox) Thumbnails(src, format, size string) (io.ReadCloser, int64, *Entry, error) {
 	var response *http.Response
 	var rawurl string
 	var err error
@@ -344,7 +356,7 @@ func (self *Dropbox) Thumbnails(src, format, size string) (io.ReadCloser, int64,
 	case "jpeg", "png":
 		break
 	default:
-		return nil, 0, nil, fmt.Errorf("Unsupported format '%s' must be jpeg or png", format)
+		return nil, 0, nil, fmt.Errorf("unsupported format '%s' must be jpeg or png", format)
 	}
 	switch size {
 	case "":
@@ -352,14 +364,14 @@ func (self *Dropbox) Thumbnails(src, format, size string) (io.ReadCloser, int64,
 	case "xs", "s", "m", "l", "xl":
 		break
 	default:
-		return nil, 0, nil, fmt.Errorf("Unsupported size '%s' must be xs, s, m, l or xl", size)
+		return nil, 0, nil, fmt.Errorf("unsupported size '%s' must be xs, s, m, l or xl", size)
 
 	}
 	if src[0] == '/' {
 		src = src[1:]
 	}
-	rawurl = fmt.Sprintf("%s/thumbnails/%s/%s?format=%s&size=%s", self.APIContentURL, self.RootDirectory, src, format, size)
-	if response, err = self.Session.Client().Get(rawurl); err != nil {
+	rawurl = fmt.Sprintf("%s/thumbnails/%s/%s?format=%s&size=%s", db.APIContentURL, db.RootDirectory, src, format, size)
+	if response, err = db.Session.Client().Get(rawurl); err != nil {
 		return nil, 0, nil, err
 	}
 	switch response.StatusCode {
@@ -368,14 +380,14 @@ func (self *Dropbox) Thumbnails(src, format, size string) (io.ReadCloser, int64,
 		return nil, 0, nil, os.ErrNotExist
 	case http.StatusUnsupportedMediaType:
 		response.Body.Close()
-		return nil, 0, nil, fmt.Errorf("The image located at '%s' cannot be converted to a thumbnail", src)
+		return nil, 0, nil, fmt.Errorf("the image located at '%s' cannot be converted to a thumbnail", src)
 	}
 	json.Unmarshal([]byte(response.Header.Get("x-dropbox-metadata")), &entry)
 	return response.Body, response.ContentLength, &entry, err
 }
 
-// Download the file located in the src path on the Dropbox to the dst file on the local disk.
-func (self *Dropbox) ThumbnailsToFile(src, dst, format, size string) (*Entry, error) {
+// ThumbnailsToFile downloads the file located in the src path on the Dropbox to the dst file on the local disk.
+func (db *Dropbox) ThumbnailsToFile(src, dst, format, size string) (*Entry, error) {
 	var input io.ReadCloser
 	var fd *os.File
 	var err error
@@ -386,7 +398,7 @@ func (self *Dropbox) ThumbnailsToFile(src, dst, format, size string) (*Entry, er
 	}
 	defer fd.Close()
 
-	if input, _, entry, err = self.Thumbnails(src, format, size); err != nil {
+	if input, _, entry, err = db.Thumbnails(src, format, size); err != nil {
 		os.Remove(dst)
 		return nil, err
 	}
@@ -397,10 +409,10 @@ func (self *Dropbox) ThumbnailsToFile(src, dst, format, size string) (*Entry, er
 	return entry, err
 }
 
-// Request the file located at src, the specific revision may be given.
+// Download requests the file located at src, the specific revision may be given.
 // offset is used in case the download was interrupted.
 // A io.ReadCloser to get the file ans its size is returned.
-func (self *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64, error) {
+func (db *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64, error) {
 	var request *http.Request
 	var response *http.Response
 	var rawurl string
@@ -410,7 +422,7 @@ func (self *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64
 		src = src[1:]
 	}
 
-	rawurl = fmt.Sprintf("%s/files/%s/%s", self.APIContentURL, self.RootDirectory, src)
+	rawurl = fmt.Sprintf("%s/files/%s/%s", db.APIContentURL, db.RootDirectory, src)
 	if len(rev) != 0 {
 		rawurl += fmt.Sprintf("?rev=%s", rev)
 	}
@@ -421,7 +433,7 @@ func (self *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64
 		request.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
 	}
 
-	if response, err = self.Session.Client().Do(request); err != nil {
+	if response, err = db.Session.Client().Do(request); err != nil {
 		return nil, 0, err
 	}
 	if response.StatusCode == http.StatusNotFound {
@@ -431,9 +443,10 @@ func (self *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64
 	return response.Body, response.ContentLength, err
 }
 
-// Resume the download of the file located in the src path on the Dropbox to the dst file on the local disk.
-func (self *Dropbox) DownloadToFileResume(src, dst, rev string) error {
+// DownloadToFileResume resumes the download of the file located in the src path on the Dropbox to the dst file on the local disk.
+func (db *Dropbox) DownloadToFileResume(src, dst, rev string) error {
 	var input io.ReadCloser
+	var fi os.FileInfo
 	var fd *os.File
 	var offset int
 	var err error
@@ -441,14 +454,13 @@ func (self *Dropbox) DownloadToFileResume(src, dst, rev string) error {
 	if fd, err = os.OpenFile(dst, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
 		return err
 	}
-	if fi, err := fd.Stat(); err != nil {
-		return err
-	} else {
-		offset = int(fi.Size())
-	}
 	defer fd.Close()
+	if fi, err = fd.Stat(); err != nil {
+		return err
+	}
+	offset = int(fi.Size())
 
-	if input, _, err = self.Download(src, rev, offset); err != nil {
+	if input, _, err = db.Download(src, rev, offset); err != nil {
 		return err
 	}
 	defer input.Close()
@@ -456,9 +468,9 @@ func (self *Dropbox) DownloadToFileResume(src, dst, rev string) error {
 	return err
 }
 
-// Download the file located in the src path on the Dropbox to the dst file on the local disk.
+// DownloadToFile downloads the file located in the src path on the Dropbox to the dst file on the local disk.
 // If the destination file exists it will be truncated.
-func (self *Dropbox) DownloadToFile(src, dst, rev string) error {
+func (db *Dropbox) DownloadToFile(src, dst, rev string) error {
 	var input io.ReadCloser
 	var fd *os.File
 	var err error
@@ -468,7 +480,7 @@ func (self *Dropbox) DownloadToFile(src, dst, rev string) error {
 	}
 	defer fd.Close()
 
-	if input, _, err = self.Download(src, rev, 0); err != nil {
+	if input, _, err = db.Download(src, rev, 0); err != nil {
 		os.Remove(dst)
 		return err
 	}
@@ -479,7 +491,7 @@ func (self *Dropbox) DownloadToFile(src, dst, rev string) error {
 	return err
 }
 
-func (self *Dropbox) doRequest(method, path string, params *url.Values, receiver interface{}) error {
+func (db *Dropbox) doRequest(method, path string, params *url.Values, receiver interface{}) error {
 	var body []byte
 	var rawurl string
 	var response *http.Response
@@ -487,13 +499,13 @@ func (self *Dropbox) doRequest(method, path string, params *url.Values, receiver
 	var err error
 
 	if params == nil {
-		params = &url.Values{"locale": {self.Locale}}
+		params = &url.Values{"locale": {db.Locale}}
 	}
-	rawurl = fmt.Sprintf("%s/%s?%s", self.APIURL, path, params.Encode())
+	rawurl = fmt.Sprintf("%s/%s?%s", db.APIURL, path, params.Encode())
 	if request, err = http.NewRequest(method, rawurl, nil); err != nil {
 		return err
 	}
-	if response, err = self.Session.Client().Do(request); err != nil {
+	if response, err = db.Session.Client().Do(request); err != nil {
 		return err
 	}
 	defer response.Body.Close()
@@ -504,7 +516,7 @@ func (self *Dropbox) doRequest(method, path string, params *url.Values, receiver
 	case http.StatusNotFound:
 		return os.ErrNotExist
 	case http.StatusBadRequest, http.StatusMethodNotAllowed:
-		var reqerr RequestError
+		var reqerr requestError
 		if err = json.Unmarshal(body, &reqerr); err != nil {
 			return err
 		}
@@ -517,9 +529,9 @@ func (self *Dropbox) doRequest(method, path string, params *url.Values, receiver
 					return fmt.Errorf("%s: %s", param, reasonstr)
 				}
 			}
-			return fmt.Errorf("Wrong parameter")
+			return fmt.Errorf("wrong parameter")
 		default:
-			return fmt.Errorf("Request error HTTP code %d", response.StatusCode)
+			return fmt.Errorf("request error HTTP code %d", response.StatusCode)
 		}
 	case http.StatusUnauthorized:
 		return ErrNotAuth
@@ -528,39 +540,39 @@ func (self *Dropbox) doRequest(method, path string, params *url.Values, receiver
 	return err
 }
 
-// Get account information for the user currently authenticated.
-func (self *Dropbox) GetAccountInfo() (*Account, error) {
+// GetAccountInfo gets account information for the user currently authenticated.
+func (db *Dropbox) GetAccountInfo() (*Account, error) {
 	var rv Account
 
-	err := self.doRequest("GET", "account/info", nil, &rv)
+	err := db.doRequest("GET", "account/info", nil, &rv)
 	return &rv, err
 }
 
-// Share a file.
-func (self *Dropbox) Shares(path string, shortUrl bool) (*Link, error) {
+// Shares shares a file.
+func (db *Dropbox) Shares(path string, shortURL bool) (*Link, error) {
 	var rv Link
 	var params *url.Values
 
-	if shortUrl {
-		params = &url.Values{"short_url": {strconv.FormatBool(shortUrl)}}
+	if shortURL {
+		params = &url.Values{"short_url": {strconv.FormatBool(shortURL)}}
 	}
-	act := strings.Join([]string{"shares", self.RootDirectory, path}, "/")
-	err := self.doRequest("POST", act, params, &rv)
+	act := strings.Join([]string{"shares", db.RootDirectory, path}, "/")
+	err := db.doRequest("POST", act, params, &rv)
 	return &rv, err
 }
 
-// Share a file for streaming.
-func (self *Dropbox) Media(path string) (*Link, error) {
+// Media shares a file for streaming (direct access).
+func (db *Dropbox) Media(path string) (*Link, error) {
 	var rv Link
 
-	act := strings.Join([]string{"media", self.RootDirectory, path}, "/")
-	err := self.doRequest("POST", act, nil, &rv)
+	act := strings.Join([]string{"media", db.RootDirectory, path}, "/")
+	err := db.doRequest("POST", act, nil, &rv)
 	return &rv, err
 }
 
-// Search entries matching all the words contained in query contained in path.
+// Search searches the entries matching all the words contained in query in the given path.
 // The maximum number of entries and whether to consider deleted file may be given.
-func (self *Dropbox) Search(path, query string, fileLimit int, includeDeleted bool) (*[]Entry, error) {
+func (db *Dropbox) Search(path, query string, fileLimit int, includeDeleted bool) (*[]Entry, error) {
 	var rv []Entry
 	var params *url.Values
 
@@ -572,13 +584,13 @@ func (self *Dropbox) Search(path, query string, fileLimit int, includeDeleted bo
 		"file_limit":      {strconv.FormatInt(int64(fileLimit), 10)},
 		"include_deleted": {strconv.FormatBool(includeDeleted)},
 	}
-	act := strings.Join([]string{"search", self.RootDirectory, path}, "/")
-	err := self.doRequest("GET", act, params, &rv)
+	act := strings.Join([]string{"search", db.RootDirectory, path}, "/")
+	err := db.doRequest("GET", act, params, &rv)
 	return &rv, err
 }
 
-// Get modifications since the cursor.
-func (self *Dropbox) Delta(cursor, pathPrefix string) (*DeltaPage, error) {
+// Delta gets modifications since the cursor.
+func (db *Dropbox) Delta(cursor, pathPrefix string) (*DeltaPage, error) {
 	var rv DeltaPage
 	var params *url.Values
 	type deltaPageParser struct {
@@ -596,7 +608,7 @@ func (self *Dropbox) Delta(cursor, pathPrefix string) (*DeltaPage, error) {
 	if len(pathPrefix) != 0 {
 		params.Set("path_prefix", pathPrefix)
 	}
-	err := self.doRequest("POST", "delta", params, &dpp)
+	err := db.doRequest("POST", "delta", params, &dpp)
 	rv = DeltaPage{Reset: dpp.Reset, HasMore: dpp.HasMore, Cursor: dpp.Cursor}
 	rv.Entries = make([]DeltaEntry, 0, len(dpp.Entries))
 	for _, jentry := range dpp.Entries {
@@ -604,7 +616,7 @@ func (self *Dropbox) Delta(cursor, pathPrefix string) (*DeltaPage, error) {
 		var entry Entry
 
 		if len(jentry) != 2 {
-			return nil, fmt.Errorf("Malformed reply")
+			return nil, fmt.Errorf("malformed reply")
 		}
 
 		if err = json.Unmarshal(jentry[0], &path); err != nil {
@@ -622,8 +634,8 @@ func (self *Dropbox) Delta(cursor, pathPrefix string) (*DeltaPage, error) {
 	return &rv, err
 }
 
-// Wait for a notification to happen.
-func (self *Dropbox) LongPollDelta(cursor string, timeout int) (*DeltaPoll, error) {
+// LongPollDelta waits for a notification to happen.
+func (db *Dropbox) LongPollDelta(cursor string, timeout int) (*DeltaPoll, error) {
 	var rv DeltaPoll
 	var params *url.Values
 	var body []byte
@@ -635,12 +647,12 @@ func (self *Dropbox) LongPollDelta(cursor string, timeout int) (*DeltaPoll, erro
 	params = &url.Values{}
 	if timeout != 0 {
 		if timeout < PollMinTimeout || timeout > PollMaxTimeout {
-			return nil, fmt.Errorf("Timeout out of range [%d; %d]", PollMinTimeout, PollMaxTimeout)
+			return nil, fmt.Errorf("timeout out of range [%d; %d]", PollMinTimeout, PollMaxTimeout)
 		}
 		params.Set("timeout", strconv.FormatInt(int64(timeout), 10))
 	}
 	params.Set("cursor", cursor)
-	rawurl = fmt.Sprintf("%s/longpoll_delta?%s", self.APINotifyURL, params.Encode())
+	rawurl = fmt.Sprintf("%s/longpoll_delta?%s", db.APINotifyURL, params.Encode())
 	if response, err = client.Get(rawurl); err != nil {
 		return nil, err
 	}
@@ -650,7 +662,7 @@ func (self *Dropbox) LongPollDelta(cursor string, timeout int) (*DeltaPoll, erro
 		return nil, err
 	}
 	if response.StatusCode == http.StatusBadRequest {
-		var reqerr RequestError
+		var reqerr requestError
 		if err = json.Unmarshal(body, &reqerr); err != nil {
 			return nil, err
 		}
@@ -660,13 +672,13 @@ func (self *Dropbox) LongPollDelta(cursor string, timeout int) (*DeltaPoll, erro
 	return &rv, err
 }
 
-// Get metadata for a file or a directory.
+// Metadata gets the metadata for a file or a directory.
 // If list is true and src is a directory, immediate child will be sent in the Contents field.
 // If include_deleted is true, entries deleted will be sent.
 // hash is the hash of the contents of a directory, it is used to avoid sending data when directory did not change.
 // rev is the specific revision to get the metadata from.
 // limit is the maximum number of entries requested.
-func (self *Dropbox) Metadata(src string, list bool, includeDeleted bool, hash, rev string, limit int) (*Entry, error) {
+func (db *Dropbox) Metadata(src string, list bool, includeDeleted bool, hash, rev string, limit int) (*Entry, error) {
 	var rv Entry
 	var params *url.Values
 
@@ -687,77 +699,77 @@ func (self *Dropbox) Metadata(src string, list bool, includeDeleted bool, hash, 
 		params.Set("hash", hash)
 	}
 
-	act := strings.Join([]string{"metadata", self.RootDirectory, src}, "/")
-	err := self.doRequest("GET", act, params, &rv)
+	act := strings.Join([]string{"metadata", db.RootDirectory, src}, "/")
+	err := db.doRequest("GET", act, params, &rv)
 	return &rv, err
 }
 
-// Get a reference to a file.
+// CopyRef gets a reference to a file.
 // This reference can be used to copy this file to another user's Dropbox by passing it to the Copy method.
-func (self *Dropbox) CopyRef(src string) (*CopyRef, error) {
+func (db *Dropbox) CopyRef(src string) (*CopyRef, error) {
 	var rv CopyRef
-	act := strings.Join([]string{"copy_ref", self.RootDirectory, src}, "/")
-	err := self.doRequest("GET", act, nil, &rv)
+	act := strings.Join([]string{"copy_ref", db.RootDirectory, src}, "/")
+	err := db.doRequest("GET", act, nil, &rv)
 	return &rv, err
 }
 
-// Get a list of revisions for a file.
-func (self *Dropbox) Revisions(src string, revLimit int) (*[]Entry, error) {
+// Revisions gets the list of revisions for a file.
+func (db *Dropbox) Revisions(src string, revLimit int) (*[]Entry, error) {
 	var rv []Entry
 	if revLimit <= 0 {
 		revLimit = RevisionsLimitDefault
 	} else if revLimit > RevisionsLimitMax {
 		revLimit = RevisionsLimitMax
 	}
-	act := strings.Join([]string{"revisions", self.RootDirectory, src}, "/")
-	err := self.doRequest("GET", act,
+	act := strings.Join([]string{"revisions", db.RootDirectory, src}, "/")
+	err := db.doRequest("GET", act,
 		&url.Values{"rev_limit": {strconv.FormatInt(int64(revLimit), 10)}}, &rv)
 	return &rv, err
 }
 
-// Restore a deleted file at the corresponding revision.
-func (self *Dropbox) Restore(src string, rev string) (*Entry, error) {
+// Restore restores a deleted file at the corresponding revision.
+func (db *Dropbox) Restore(src string, rev string) (*Entry, error) {
 	var rv Entry
-	act := strings.Join([]string{"restore", self.RootDirectory, src}, "/")
-	err := self.doRequest("POST", act, &url.Values{"rev": {rev}}, &rv)
+	act := strings.Join([]string{"restore", db.RootDirectory, src}, "/")
+	err := db.doRequest("POST", act, &url.Values{"rev": {rev}}, &rv)
 	return &rv, err
 }
 
-// Copy a file.
+// Copy copies a file.
 // If isRef is true src must be a reference from CopyRef instead of a path.
-func (self *Dropbox) Copy(src, dst string, isRef bool) (*Entry, error) {
+func (db *Dropbox) Copy(src, dst string, isRef bool) (*Entry, error) {
 	var rv Entry
-	params := &url.Values{"root": {self.RootDirectory}, "to_path": {dst}}
+	params := &url.Values{"root": {db.RootDirectory}, "to_path": {dst}}
 	if isRef {
 		params.Set("from_path", src)
 	} else {
 		params.Set("from_copy_ref", src)
 	}
-	err := self.doRequest("POST", "fileops/copy", params, &rv)
+	err := db.doRequest("POST", "fileops/copy", params, &rv)
 	return &rv, err
 }
 
-// Create a new directory.
-func (self *Dropbox) CreateFolder(path string) (*Entry, error) {
+// CreateFolder creates a new directory.
+func (db *Dropbox) CreateFolder(path string) (*Entry, error) {
 	var rv Entry
-	err := self.doRequest("POST", "fileops/create_folder",
-		&url.Values{"root": {self.RootDirectory}, "path": {path}}, &rv)
+	err := db.doRequest("POST", "fileops/create_folder",
+		&url.Values{"root": {db.RootDirectory}, "path": {path}}, &rv)
 	return &rv, err
 }
 
-// Remove a file or directory (it is a recursive delete).
-func (self *Dropbox) Delete(path string) (*Entry, error) {
+// Delete removes a file or directory (it is a recursive delete).
+func (db *Dropbox) Delete(path string) (*Entry, error) {
 	var rv Entry
-	err := self.doRequest("POST", "fileops/delete",
-		&url.Values{"root": {self.RootDirectory}, "path": {path}}, &rv)
+	err := db.doRequest("POST", "fileops/delete",
+		&url.Values{"root": {db.RootDirectory}, "path": {path}}, &rv)
 	return &rv, err
 }
 
-// Move a file or directory.
-func (self *Dropbox) Move(src, dst string) (*Entry, error) {
+// Move moves a file or directory.
+func (db *Dropbox) Move(src, dst string) (*Entry, error) {
 	var rv Entry
-	err := self.doRequest("POST", "fileops/move",
-		&url.Values{"root": {self.RootDirectory},
+	err := db.doRequest("POST", "fileops/move",
+		&url.Values{"root": {db.RootDirectory},
 			"from_path": {src},
 			"to_path":   {dst}}, &rv)
 	return &rv, err

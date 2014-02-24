@@ -33,7 +33,7 @@ import (
 	"os"
 )
 
-// Generate a key by reading length bytes from /dev/random
+// GenerateKey generates a key by reading length bytes from /dev/random
 func GenerateKey(length int) ([]byte, error) {
 	var err error
 	var fd io.Reader
@@ -74,13 +74,13 @@ func newDecrypter(key []byte, in io.Reader, size int, newCipher func(key []byte)
 	return rd, nil
 }
 
-// Create and return a new io.ReadCloser to decrypt the given io.Reader containing size bytes with the given AES key.
+// NewAESDecrypterReader creates and returns a new io.ReadCloser to decrypt the given io.Reader containing size bytes with the given AES key.
 // The AES key should be either 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.
 func NewAESDecrypterReader(key []byte, input io.Reader, size int) (io.ReadCloser, error) {
 	return newDecrypter(key, input, size, aes.NewCipher)
 }
 
-// Create and return a new io.ReadCloser to encrypt the given io.Reader containing size bytes with the given AES key.
+// NewAESCrypterReader creates and returns a new io.ReadCloser to encrypt the given io.Reader containing size bytes with the given AES key.
 // The AES key should be either 16, 24, or 32 bytes to select AES-128, AES-192, or AES-256.
 func NewAESCrypterReader(key []byte, input io.Reader, size int) (io.ReadCloser, int, error) {
 	return newCrypter(key, input, size, aes.NewCipher)
@@ -162,8 +162,8 @@ func decrypt(block cipher.Block, in io.Reader, size int, out io.WriteCloser) err
 	return err
 }
 
-// Upload and encrypt size bytes from the input reader to the dst path on Dropbox.
-func (self *Dropbox) FilesPutAES(key []byte, input io.ReadCloser, size int64, dst string, overwrite bool, parentRev string) (*Entry, error) {
+// FilesPutAES uploads and encrypts size bytes from the input reader to the dst path on Dropbox.
+func (db *Dropbox) FilesPutAES(key []byte, input io.ReadCloser, size int64, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var encreader io.ReadCloser
 	var outsize int
 	var err error
@@ -171,11 +171,11 @@ func (self *Dropbox) FilesPutAES(key []byte, input io.ReadCloser, size int64, ds
 	if encreader, outsize, err = NewAESCrypterReader(key, input, int(size)); err != nil {
 		return nil, err
 	}
-	return self.FilesPut(encreader, int64(outsize), dst, overwrite, parentRev)
+	return db.FilesPut(encreader, int64(outsize), dst, overwrite, parentRev)
 }
 
-// Upload and encrypt the file located in the src path on the local disk to the dst path on Dropbox.
-func (self *Dropbox) UploadFileAES(key []byte, src, dst string, overwrite bool, parentRev string) (*Entry, error) {
+// UploadFileAES uploads and encrypts the file located in the src path on the local disk to the dst path on Dropbox.
+func (db *Dropbox) UploadFileAES(key []byte, src, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var err error
 	var fd *os.File
 	var fsize int64
@@ -190,23 +190,23 @@ func (self *Dropbox) UploadFileAES(key []byte, src, dst string, overwrite bool, 
 	} else {
 		return nil, err
 	}
-	return self.FilesPutAES(key, fd, fsize, dst, overwrite, parentRev)
+	return db.FilesPutAES(key, fd, fsize, dst, overwrite, parentRev)
 }
 
-// Download and decrypt the file located in the src path on Dropbox and return a io.ReadCloser.
-func (self *Dropbox) DownloadAES(key []byte, src, rev string, offset int) (io.ReadCloser, error) {
+// DownloadAES downloads and decrypts the file located in the src path on Dropbox and return a io.ReadCloser.
+func (db *Dropbox) DownloadAES(key []byte, src, rev string, offset int) (io.ReadCloser, error) {
 	var in io.ReadCloser
 	var size int64
 	var err error
 
-	if in, size, err = self.Download(src, rev, offset); err != nil {
+	if in, size, err = db.Download(src, rev, offset); err != nil {
 		return nil, err
 	}
 	return NewAESDecrypterReader(key, in, int(size))
 }
 
-// Download and decrypt the file located in the src path on Dropbox to the dst file on the local disk.
-func (self *Dropbox) DownloadToFileAES(key []byte, src, dst, rev string) error {
+// DownloadToFileAES downloads and decrypts the file located in the src path on Dropbox to the dst file on the local disk.
+func (db *Dropbox) DownloadToFileAES(key []byte, src, dst, rev string) error {
 	var input io.ReadCloser
 	var fd *os.File
 	var err error
@@ -216,7 +216,7 @@ func (self *Dropbox) DownloadToFileAES(key []byte, src, dst, rev string) error {
 	}
 	defer fd.Close()
 
-	if input, err = self.DownloadAES(key, src, rev, 0); err != nil {
+	if input, err = db.DownloadAES(key, src, rev, 0); err != nil {
 		os.Remove(dst)
 		return err
 	}
