@@ -741,9 +741,9 @@ func (db *Dropbox) Copy(src, dst string, isRef bool) (*Entry, error) {
 	var rv Entry
 	params := &url.Values{"root": {db.RootDirectory}, "to_path": {dst}}
 	if isRef {
-		params.Set("from_path", src)
-	} else {
 		params.Set("from_copy_ref", src)
+	} else {
+		params.Set("from_path", src)
 	}
 	err := db.doRequest("POST", "fileops/copy", params, &rv)
 	return &rv, err
