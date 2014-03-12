@@ -303,7 +303,7 @@ func (db *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overwri
 		dst = dst[1:]
 	}
 
-	params = &url.Values{"overwrite": {strconv.FormatBool(overwrite)}}
+	params = &url.Values{"overwrite": {strconv.FormatBool(overwrite)}, "locale": {db.Locale}}
 	if len(parentRev) != 0 {
 		params.Set("parent_rev", parentRev)
 	}
@@ -500,6 +500,8 @@ func (db *Dropbox) doRequest(method, path string, params *url.Values, receiver i
 
 	if params == nil {
 		params = &url.Values{"locale": {db.Locale}}
+	} else {
+		params.Set("locale", db.Locale)
 	}
 	rawurl = fmt.Sprintf("%s/%s?%s", db.APIURL, path, params.Encode())
 	if request, err = http.NewRequest(method, rawurl, nil); err != nil {
