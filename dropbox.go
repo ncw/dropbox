@@ -574,7 +574,7 @@ func (db *Dropbox) Media(path string) (*Link, error) {
 
 // Search searches the entries matching all the words contained in query in the given path.
 // The maximum number of entries and whether to consider deleted file may be given.
-func (db *Dropbox) Search(path, query string, fileLimit int, includeDeleted bool) (*[]Entry, error) {
+func (db *Dropbox) Search(path, query string, fileLimit int, includeDeleted bool) ([]Entry, error) {
 	var rv []Entry
 	var params *url.Values
 
@@ -588,7 +588,7 @@ func (db *Dropbox) Search(path, query string, fileLimit int, includeDeleted bool
 	}
 	act := strings.Join([]string{"search", db.RootDirectory, path}, "/")
 	err := db.doRequest("GET", act, params, &rv)
-	return &rv, err
+	return rv, err
 }
 
 // Delta gets modifications since the cursor.
@@ -716,7 +716,7 @@ func (db *Dropbox) CopyRef(src string) (*CopyRef, error) {
 }
 
 // Revisions gets the list of revisions for a file.
-func (db *Dropbox) Revisions(src string, revLimit int) (*[]Entry, error) {
+func (db *Dropbox) Revisions(src string, revLimit int) ([]Entry, error) {
 	var rv []Entry
 	if revLimit <= 0 {
 		revLimit = RevisionsLimitDefault
@@ -726,7 +726,7 @@ func (db *Dropbox) Revisions(src string, revLimit int) (*[]Entry, error) {
 	act := strings.Join([]string{"revisions", db.RootDirectory, src}, "/")
 	err := db.doRequest("GET", act,
 		&url.Values{"rev_limit": {strconv.FormatInt(int64(revLimit), 10)}}, &rv)
-	return &rv, err
+	return rv, err
 }
 
 // Restore restores a deleted file at the corresponding revision.
