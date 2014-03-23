@@ -193,7 +193,7 @@ func (db *Dropbox) UploadFileAES(key []byte, src, dst string, overwrite bool, pa
 	return db.FilesPutAES(key, fd, fsize, dst, overwrite, parentRev)
 }
 
-// DownloadAES downloads and decrypts the file located in the src path on Dropbox and return a io.ReadCloser.
+// DownloadAES downloads and decrypts the file located in the src path on Dropbox and returns a io.ReadCloser.
 func (db *Dropbox) DownloadAES(key []byte, src, rev string, offset int) (io.ReadCloser, error) {
 	var in io.ReadCloser
 	var size int64

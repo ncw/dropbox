@@ -1,6 +1,8 @@
 dropbox
 =======
-Go client library for the Dropbox core API with support for uploading and downloading encrypted files.
+Go client library for the Dropbox core and Datastore API with support for uploading and downloading encrypted files.
+
+Support of the Datastore API should be considered as a beta version.
 
 Prerequisite
 ------------
@@ -9,7 +11,7 @@ To register a new client application, please visit https://www.dropbox.com/devel
 
 Installation
 ------------
-This library depends on a fork of the goauth2 library, it can be installed with the go get command: 
+This library depends on a fork of the goauth2 library, it can be installed with the go get command:
 
     $ go get code.google.com/p/stacktic-goauth2
 

@@ -23,7 +23,7 @@
 ** SUCH DAMAGE.
  */
 
-// Package dropbox implements the Dropbox core API.
+// Package dropbox implements the Dropbox core and datastore API.
 package dropbox
 
 import (
