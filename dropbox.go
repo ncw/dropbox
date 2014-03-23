@@ -47,18 +47,18 @@ var ErrNotAuth = errors.New("authentication required")
 
 // Account represents information about the user account.
 type Account struct {
-	ReferralLink string `json:"referral_link"` // URL for referral.
-	DisplayName  string `json:"display_name"`  // User name.
-	UID          int    `json:"uid"`           // User account ID.
-	Country      string `json:"country"`       // Country ISO code.
+	ReferralLink string `json:"referral_link,omitempty"` // URL for referral.
+	DisplayName  string `json:"display_name,omitempty"`  // User name.
+	UID          int    `json:"uid,omitempty"`           // User account ID.
+	Country      string `json:"country,omitempty"`       // Country ISO code.
 	QuotaInfo    struct {
-		Shared int64 `json:"shared"` // Quota for shared files.
-		Quota  int64 `json:"quota"`  // Quota in bytes.
-		Normal int64 `json:"normal"` // Quota for non-shared files.
+		Shared int64 `json:"shared,omitempty"` // Quota for shared files.
+		Quota  int64 `json:"quota,omitempty"`  // Quota in bytes.
+		Normal int64 `json:"normal,omitempty"` // Quota for non-shared files.
 	} `json:"quota_info"`
 }
 
-// CopyRef represents thr reply of CopyRef.
+// CopyRef represents the reply of CopyRef.
 type CopyRef struct {
 	CopyRef string `json:"copy_ref"` // Reference to use on fileops/copy.
 	Expires string `json:"expires"`  // Expiration date.
@@ -72,7 +72,7 @@ type DeltaPage struct {
 	Entries []DeltaEntry // List of changed entries.
 }
 
-// DeltaEntry represents the the list of changes for a given path.
+// DeltaEntry represents the list of changes for a given path.
 type DeltaEntry struct {
 	Path  string // Path of this entry in lowercase.
 	Entry *Entry // nil when this entry does not exists.
@@ -88,10 +88,10 @@ type DeltaPoll struct {
 type ChunkUploadResponse struct {
 	UploadID string `json:"upload_id"` // Unique ID of this upload.
 	Offset   int    `json:"offset"`    // Size in bytes of already sent data.
-	Expires  string `json:"expires"`   // Expiration time of this upload.
+	Expires  DBTime `json:"expires"`   // Expiration time of this upload.
 }
 
-// Format of reply when http error code is not 200
+// Format of reply when http error code is not 200.
 // Format may be:
 // {"error": "reason"}
 // {"error": {"param": "reason"}}
@@ -100,9 +100,9 @@ type requestError struct {
 }
 
 const (
-	// PollMinTimeout is the minimum timeout for longpoll
+	// PollMinTimeout is the minimum timeout for longpoll.
 	PollMinTimeout = 30
-	// PollMaxTimeout is the maximum timeout for longpoll
+	// PollMaxTimeout is the maximum timeout for longpoll.
 	PollMaxTimeout = 480
 	// DefaultChunkSize is the maximum size of a file sendable using files_put.
 	DefaultChunkSize = 4 * 1024 * 1024
@@ -124,34 +124,62 @@ const (
 	DateFormat = time.RFC1123Z
 )
 
+// DBTime allow marshalling and unmarshalling of time.
+type DBTime time.Time
+
+// UnmarshalJSON unmarshals a time according to the Dropbox format.
+func (dbt *DBTime) UnmarshalJSON(data []byte) error {
+	var s string
+	var err error
+	var t time.Time
+
+	if err = json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	if t, err = time.ParseInLocation(DateFormat, s, time.UTC); err != nil {
+		return err
+	}
+	if t.IsZero() {
+		*dbt = DBTime(time.Time{})
+	} else {
+		*dbt = DBTime(t)
+	}
+	return nil
+}
+
+// MarshalJSON marshals a time according to the Dropbox format.
+func (dbt DBTime) MarshalJSON() ([]byte, error) {
+	return json.Marshal(time.Time(dbt).Format(DateFormat))
+}
+
 // Entry represents the metadata of a file or folder.
 type Entry struct {
-	Bytes       int     `json:"bytes"`        // Size of the file in bytes.
-	ClientMtime string  `json:"client_mtime"` // Modification time set by the client when added.
-	Contents    []Entry `json:"contents"`     // List of children for a directory.
-	Hash        string  `json:"hash"`         // hash of this entry.
-	Icon        string  `json:"icon"`         // Name of the icon displayed for this entry.
-	IsDeleted   bool    `json:"is_deleted"`   // true if this entry was deleted.
-	IsDir       bool    `json:"is_dir"`       // true if this entry is a directory.
-	MimeType    string  `json:"mime_type"`    // MimeType of this entry.
-	Modified    string  `json:"modified"`     // Date of last modification.
-	Path        string  `json:"path"`         // Absolute path of this entry.
-	Revision    string  `json:"rev"`          // Unique ID for this file revision.
-	Root        string  `json:"root"`         // dropbox or sandbox.
-	Size        string  `json:"size"`         // Size of the file humanized/localized.
-	ThumbExists bool    `json:"thumb_exists"` // true if a thumbnail is available for this entry.
+	Bytes       int     `json:"bytes,omitempty"`        // Size of the file in bytes.
+	ClientMtime DBTime  `json:"client_mtime,omitempty"` // Modification time set by the client when added.
+	Contents    []Entry `json:"contents,omitempty"`     // List of children for a directory.
+	Hash        string  `json:"hash,omitempty"`         // Hash of this entry.
+	Icon        string  `json:"icon,omitempty"`         // Name of the icon displayed for this entry.
+	IsDeleted   bool    `json:"is_deleted,omitempty"`   // true if this entry was deleted.
+	IsDir       bool    `json:"is_dir,omitempty"`       // true if this entry is a directory.
+	MimeType    string  `json:"mime_type,omitempty"`    // MimeType of this entry.
+	Modified    DBTime  `json:"modified,omitempty"`     // Date of last modification.
+	Path        string  `json:"path,omitempty"`         // Absolute path of this entry.
+	Revision    string  `json:"rev,omitempty"`          // Unique ID for this file revision.
+	Root        string  `json:"root,omitempty"`         // dropbox or sandbox.
+	Size        string  `json:"size,omitempty"`         // Size of the file humanized/localized.
+	ThumbExists bool    `json:"thumb_exists,omitempty"` // true if a thumbnail is available for this entry.
 }
 
 // Link for sharing a file.
 type Link struct {
-	Expires string `json:"expires"` // Expiration date of this link.
+	Expires DBTime `json:"expires"` // Expiration date of this link.
 	URL     string `json:"url"`     // URL to share.
 }
 
 // Dropbox client.
 type Dropbox struct {
 	RootDirectory string          // dropbox or sandbox.
-	Locale        string          // Locale send to the API to translate/format messages.
+	Locale        string          // Locale sent to the API to translate/format messages.
 	APIURL        string          // Normal API URL.
 	APIContentURL string          // URL for transferring files.
 	APINotifyURL  string          // URL for realtime notification.
