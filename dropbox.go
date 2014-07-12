@@ -231,6 +231,33 @@ func (db *Dropbox) Auth() error {
 	return err
 }
 
+func getResponse(r *http.Response) ([]byte, error) {
+	var e requestError
+	var b []byte
+	var err error
+
+	if b, err = ioutil.ReadAll(r.Body); err != nil {
+		return nil, err
+	}
+	if r.StatusCode == http.StatusOK {
+		return b, nil
+	}
+	if err = json.Unmarshal(b, &e); err == nil {
+		switch v := e.Error.(type) {
+		case string:
+			return nil, fmt.Errorf("%s", v)
+		case map[string]interface{}:
+			for param, reason := range v {
+				if reasonstr, ok := reason.(string); ok {
+					return nil, fmt.Errorf("%s: %s", param, reasonstr)
+				}
+			}
+			return nil, fmt.Errorf("wrong parameter")
+		}
+	}
+	return nil, fmt.Errorf("unexpected HTTP status code %d", r.StatusCode)
+}
+
 // CommitChunkedUpload ends the chunked upload by giving a name to the UploadID.
 func (db *Dropbox) CommitChunkedUpload(uploadid, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var err error
@@ -258,10 +285,10 @@ func (db *Dropbox) CommitChunkedUpload(uploadid, dst string, overwrite bool, par
 		return nil, err
 	}
 	defer response.Body.Close()
-
-	if body, err = ioutil.ReadAll(response.Body); err == nil {
-		err = json.Unmarshal(body, &rv)
+	if body, err = getResponse(response); err != nil {
+		return nil, err
 	}
+	err = json.Unmarshal(body, &rv)
 	return &rv, err
 }
 
@@ -291,10 +318,10 @@ func (db *Dropbox) ChunkedUpload(session *ChunkUploadResponse, input io.ReadClos
 		return nil, err
 	}
 	defer response.Body.Close()
-
-	if body, err = ioutil.ReadAll(response.Body); err == nil {
-		err = json.Unmarshal(body, &cur)
+	if body, err = getResponse(response); err != nil {
+		return nil, err
 	}
+	err = json.Unmarshal(body, &cur)
 	if r.N != 0 {
 		err = io.EOF
 	}
@@ -345,10 +372,10 @@ func (db *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overwri
 		return nil, err
 	}
 	defer response.Body.Close()
-
-	if body, err = ioutil.ReadAll(response.Body); err == nil {
-		err = json.Unmarshal(body, &rv)
+	if body, err = getResponse(response); err != nil {
+		return nil, err
 	}
+	err = json.Unmarshal(body, &rv)
 	return &rv, err
 }
 
@@ -539,32 +566,8 @@ func (db *Dropbox) doRequest(method, path string, params *url.Values, receiver i
 		return err
 	}
 	defer response.Body.Close()
-	if body, err = ioutil.ReadAll(response.Body); err != nil {
+	if body, err = getResponse(response); err != nil {
 		return err
-	}
-	switch response.StatusCode {
-	case http.StatusNotFound:
-		return os.ErrNotExist
-	case http.StatusBadRequest, http.StatusMethodNotAllowed:
-		var reqerr requestError
-		if err = json.Unmarshal(body, &reqerr); err != nil {
-			return err
-		}
-		switch v := reqerr.Error.(type) {
-		case string:
-			return fmt.Errorf("%s", v)
-		case map[string]interface{}:
-			for param, reason := range v {
-				if reasonstr, ok := reason.(string); ok {
-					return fmt.Errorf("%s: %s", param, reasonstr)
-				}
-			}
-			return fmt.Errorf("wrong parameter")
-		default:
-			return fmt.Errorf("request error HTTP code %d", response.StatusCode)
-		}
-	case http.StatusUnauthorized:
-		return ErrNotAuth
 	}
 	err = json.Unmarshal(body, receiver)
 	return err
@@ -687,16 +690,8 @@ func (db *Dropbox) LongPollDelta(cursor string, timeout int) (*DeltaPoll, error)
 		return nil, err
 	}
 	defer response.Body.Close()
-
-	if body, err = ioutil.ReadAll(response.Body); err != nil {
+	if body, err = getResponse(response); err != nil {
 		return nil, err
-	}
-	if response.StatusCode == http.StatusBadRequest {
-		var reqerr requestError
-		if err = json.Unmarshal(body, &reqerr); err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("%s", reqerr.Error)
 	}
 	err = json.Unmarshal(body, &rv)
 	return &rv, err
