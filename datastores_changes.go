@@ -332,10 +332,10 @@ func (ds *Datastore) validateChange(c *change) error {
 				maxIndex++
 			}
 			if op.Index > maxIndex {
-				return fmt.Errorf("out of bound access index %d on [0:%s]", op.Index, maxIndex)
+				return fmt.Errorf("out of bound access index %d on [0:%d]", op.Index, maxIndex)
 			}
 			if op.Index2 > maxIndex {
-				return fmt.Errorf("out of bound access index %d on [0:%s]", op.Index, maxIndex)
+				return fmt.Errorf("out of bound access index %d on [0:%d]", op.Index, maxIndex)
 			}
 		}
 	}

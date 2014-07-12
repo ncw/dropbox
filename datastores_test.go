@@ -247,12 +247,12 @@ func TestUnmarshalAwait(t *testing.T) {
 		res = tmp.Deltas
 	}
 	if len(res) != len(expected) {
-		t.Fatalf("got %d results expected %s", len(res), len(expected))
+		t.Fatalf("got %d results expected %d", len(res), len(expected))
 	}
 	for i, d := range res {
 		ed := expected[i]
 		if d.Revision != ed.Revision {
-			t.Errorf("wrong revision got %d expected %s", d.Revision, expected[i].Revision)
+			t.Errorf("wrong revision got %d expected %d", d.Revision, expected[i].Revision)
 		}
 		for j, c := range d.Changes {
 			if !c.equals(ed.Changes[j]) {
