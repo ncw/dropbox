@@ -280,7 +280,7 @@ func getResponse(r *http.Response) ([]byte, error) {
 			return nil, newErrorf(r.StatusCode, "wrong parameter")
 		}
 	}
-	return nil, newErrorf(r.StatusCode, "unexpected HTTP status code %d")
+	return nil, newErrorf(r.StatusCode, "unexpected HTTP status code %d", r.StatusCode)
 }
 
 // CommitChunkedUpload ends the chunked upload by giving a name to the UploadID.
@@ -454,16 +454,19 @@ func (db *Dropbox) Thumbnails(src, format, size string) (io.ReadCloser, int64, *
 	if response, err = db.Session.Client().Get(rawurl); err != nil {
 		return nil, 0, nil, err
 	}
+	if response.StatusCode == http.StatusOK {
+		json.Unmarshal([]byte(response.Header.Get("x-dropbox-metadata")), &entry)
+		return response.Body, response.ContentLength, &entry, err
+	}
+	response.Body.Close()
 	switch response.StatusCode {
 	case http.StatusNotFound:
-		response.Body.Close()
 		return nil, 0, nil, os.ErrNotExist
 	case http.StatusUnsupportedMediaType:
-		response.Body.Close()
 		return nil, 0, nil, newErrorf(response.StatusCode, "the image located at '%s' cannot be converted to a thumbnail", src)
+	default:
+		return nil, 0, nil, newErrorf(response.StatusCode, "unexpected HTTP status code %d", response.StatusCode)
 	}
-	json.Unmarshal([]byte(response.Header.Get("x-dropbox-metadata")), &entry)
-	return response.Body, response.ContentLength, &entry, err
 }
 
 // ThumbnailsToFile downloads the file located in the src path on the Dropbox to the dst file on the local disk.
@@ -516,11 +519,16 @@ func (db *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64, 
 	if response, err = db.Session.Client().Do(request); err != nil {
 		return nil, 0, err
 	}
-	if response.StatusCode == http.StatusNotFound {
-		response.Body.Close()
-		return nil, 0, os.ErrNotExist
+	if response.StatusCode == http.StatusOK {
+		return response.Body, response.ContentLength, err
 	}
-	return response.Body, response.ContentLength, err
+	response.Body.Close()
+	switch response.StatusCode {
+	case http.StatusNotFound:
+		return nil, 0, os.ErrNotExist
+	default:
+		return nil, 0, newErrorf(response.StatusCode, "unexpected HTTP status code %d", response.StatusCode)
+	}
 }
 
 // DownloadToFileResume resumes the download of the file located in the src path on the Dropbox to the dst file on the local disk.
