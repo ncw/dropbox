@@ -143,7 +143,9 @@ func (db *Dropbox) createDatastore(key string) (int, string, bool, error) {
 			return 0, "", false, err
 		}
 	}
-	rhash := sha256.Sum256([]byte(b64key))
+	hash := sha256.New()
+	hash.Write([]byte(b64key))
+	rhash := hash.Sum(nil)
 	dsID := "." + encodeDBase64(rhash[:])
 
 	params := &url.Values{
