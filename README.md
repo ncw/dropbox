@@ -11,9 +11,9 @@ To register a new client application, please visit https://www.dropbox.com/devel
 
 Installation
 ------------
-This library depends on a fork of the goauth2 library, it can be installed with the go get command:
+This library depends on the oauth2 package, it can be installed with the go get command:
 
-    $ go get code.google.com/p/stacktic-goauth2
+    $ go get github.com/golang/oauth2
 
 This package can be installed with the go get command:
 
