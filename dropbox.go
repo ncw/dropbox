@@ -283,6 +283,14 @@ func getResponse(r *http.Response) ([]byte, error) {
 	return nil, newErrorf(r.StatusCode, "unexpected HTTP status code %d", r.StatusCode)
 }
 
+// urlEncode encodes s for url
+func urlEncode(s string) string {
+	// Would like to call url.escape(value, encodePath) here
+	encoded := url.QueryEscape(s)
+	encoded = strings.Replace(encoded, "+", "%20", -1)
+	return encoded
+}
+
 // CommitChunkedUpload ends the chunked upload by giving a name to the UploadID.
 func (db *Dropbox) CommitChunkedUpload(uploadid, dst string, overwrite bool, parentRev string) (*Entry, error) {
 	var err error
@@ -304,7 +312,7 @@ func (db *Dropbox) CommitChunkedUpload(uploadid, dst string, overwrite bool, par
 	if len(parentRev) != 0 {
 		params.Set("parent_rev", parentRev)
 	}
-	rawurl = fmt.Sprintf("%s/commit_chunked_upload/%s/%s?%s", db.APIContentURL, db.RootDirectory, dst, params.Encode())
+	rawurl = fmt.Sprintf("%s/commit_chunked_upload/%s/%s?%s", db.APIContentURL, db.RootDirectory, urlEncode(dst), params.Encode())
 
 	if response, err = db.Session.Client().Post(rawurl, "", nil); err != nil {
 		return nil, err
@@ -387,7 +395,7 @@ func (db *Dropbox) FilesPut(input io.ReadCloser, size int64, dst string, overwri
 	if len(parentRev) != 0 {
 		params.Set("parent_rev", parentRev)
 	}
-	rawurl = fmt.Sprintf("%s/files_put/%s/%s?%s", db.APIContentURL, db.RootDirectory, dst, params.Encode())
+	rawurl = fmt.Sprintf("%s/files_put/%s/%s?%s", db.APIContentURL, db.RootDirectory, urlEncode(dst), params.Encode())
 
 	if request, err = http.NewRequest("PUT", rawurl, input); err != nil {
 		return nil, err
@@ -450,7 +458,7 @@ func (db *Dropbox) Thumbnails(src, format, size string) (io.ReadCloser, int64, *
 	if src[0] == '/' {
 		src = src[1:]
 	}
-	rawurl = fmt.Sprintf("%s/thumbnails/%s/%s?format=%s&size=%s", db.APIContentURL, db.RootDirectory, src, format, size)
+	rawurl = fmt.Sprintf("%s/thumbnails/%s/%s?format=%s&size=%s", db.APIContentURL, db.RootDirectory, urlEncode(src), urlEncode(format), urlEncode(size))
 	if response, err = db.Session.Client().Get(rawurl); err != nil {
 		return nil, 0, nil, err
 	}
@@ -505,7 +513,7 @@ func (db *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64, 
 		src = src[1:]
 	}
 
-	rawurl = fmt.Sprintf("%s/files/%s/%s", db.APIContentURL, db.RootDirectory, src)
+	rawurl = fmt.Sprintf("%s/files/%s/%s", db.APIContentURL, db.RootDirectory, urlEncode(src))
 	if len(rev) != 0 {
 		rawurl += fmt.Sprintf("?rev=%s", rev)
 	}
@@ -591,7 +599,7 @@ func (db *Dropbox) doRequest(method, path string, params *url.Values, receiver i
 	} else {
 		params.Set("locale", db.Locale)
 	}
-	rawurl = fmt.Sprintf("%s/%s?%s", db.APIURL, path, params.Encode())
+	rawurl = fmt.Sprintf("%s/%s?%s", db.APIURL, urlEncode(path), params.Encode())
 	if request, err = http.NewRequest(method, rawurl, nil); err != nil {
 		return err
 	}
