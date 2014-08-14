@@ -225,7 +225,7 @@ func (db *Dropbox) AccessToken() string {
 }
 
 func (db *Dropbox) client() *http.Client {
-	var t oauth2.Transport
+	var t *oauth2.Transport
 
 	t = db.config.NewTransport()
 	t.SetToken(db.token)
@@ -235,7 +235,7 @@ func (db *Dropbox) client() *http.Client {
 // Auth displays the URL to authorize this application to connect to your account.
 func (db *Dropbox) Auth() error {
 	var code string
-	var t oauth2.Transport
+	var t *oauth2.Transport
 	var err error
 
 	fmt.Printf("Please visit:\n%s\nEnter the code: ",
