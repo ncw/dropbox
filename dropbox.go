@@ -239,7 +239,7 @@ func (db *Dropbox) Auth() error {
 	var err error
 
 	fmt.Printf("Please visit:\n%s\nEnter the code: ",
-		db.config.AuthCodeURL(""))
+		db.config.AuthCodeURL("", "", ""))
 	fmt.Scanln(&code)
 	if t, err = db.config.NewTransportWithCode(code); err != nil {
 		return err
