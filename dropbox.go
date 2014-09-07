@@ -39,7 +39,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/oauth2"
+	"github.com/stacktic/oauth2"
 )
 
 // ErrNotAuth is the error returned when the OAuth token is not provided
