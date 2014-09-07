@@ -132,7 +132,7 @@ func TestAccountInfo(t *testing.T) {
 		t.Fatalf("could not run test marshalling issue")
 	}
 
-	http.DefaultTransport = FakeHTTP{t: t, Method: "GET", Host: "api.dropbox.com", Path: "/1/account/info",
+	db.config.Transport = FakeHTTP{t: t, Method: "GET", Host: "api.dropbox.com", Path: "/1/account/info",
 		Params:       map[string]string{"locale": "en"},
 		ResponseData: js}
 
@@ -165,7 +165,7 @@ func TestCopy(t *testing.T) {
 		ResponseData: js}
 
 	db = newDropbox(t)
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Copy(from, to, false); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -174,7 +174,7 @@ func TestCopy(t *testing.T) {
 
 	delete(fake.Params, "from_path")
 	fake.Params["from_copy_ref"] = from
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Copy(from, to, true); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -197,7 +197,7 @@ func TestCopyRef(t *testing.T) {
 		t.Fatalf("could not run test due to marshalling issue")
 	}
 
-	http.DefaultTransport = FakeHTTP{Method: "GET", Host: "api.dropbox.com", Path: "/1/copy_ref/dropbox/" + filename, t: t,
+	db.config.Transport = FakeHTTP{Method: "GET", Host: "api.dropbox.com", Path: "/1/copy_ref/dropbox/" + filename, t: t,
 		Params: map[string]string{"locale": "en"}, ResponseData: js}
 	if received, err = db.CopyRef(filename); err != nil {
 		t.Errorf("API error: %s", err)
@@ -221,7 +221,7 @@ func TestCreateFolder(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	http.DefaultTransport = FakeHTTP{Method: "POST", Host: "api.dropbox.com", Path: "/1/fileops/create_folder",
+	db.config.Transport = FakeHTTP{Method: "POST", Host: "api.dropbox.com", Path: "/1/fileops/create_folder",
 		Params: map[string]string{"root": "dropbox", "path": foldername, "locale": "en"}, t: t, ResponseData: js}
 	if received, err = db.CreateFolder(foldername); err != nil {
 		t.Errorf("API error: %s", err)
@@ -246,7 +246,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	http.DefaultTransport = FakeHTTP{t: t, Method: "POST", Host: "api.dropbox.com", Path: "/1/fileops/delete",
+	db.config.Transport = FakeHTTP{t: t, Method: "POST", Host: "api.dropbox.com", Path: "/1/fileops/delete",
 		Params:       map[string]string{"root": "dropbox", "path": path, "locale": "en"},
 		ResponseData: js}
 	if received, err = db.Delete(path); err != nil {
@@ -282,7 +282,7 @@ func TestFilesPut(t *testing.T) {
 
 	db = newDropbox(t)
 
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	received, err = db.FilesPut(ioutil.NopCloser(bytes.NewBuffer(content)), int64(len(content)), filename, false, "")
 	if err != nil {
 		t.Errorf("API error: %s", err)
@@ -291,7 +291,7 @@ func TestFilesPut(t *testing.T) {
 	}
 
 	fake.Params["parent_rev"] = "12345"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	received, err = db.FilesPut(ioutil.NopCloser(bytes.NewBuffer(content)), int64(len(content)), filename, false, "12345")
 	if err != nil {
 		t.Errorf("API error: %s", err)
@@ -300,7 +300,7 @@ func TestFilesPut(t *testing.T) {
 	}
 
 	fake.Params["overwrite"] = "true"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	received, err = db.FilesPut(ioutil.NopCloser(bytes.NewBuffer(content)), int64(len(content)), filename, true, "12345")
 	if err != nil {
 		t.Errorf("API error: %s", err)
@@ -329,7 +329,7 @@ func TestMedia(t *testing.T) {
 		t.Fatalf("could not run test due to marshalling issue: %s", err)
 	}
 
-	http.DefaultTransport = FakeHTTP{Method: "POST", Host: "api.dropbox.com", Path: "/1/media/dropbox/" + filename,
+	db.config.Transport = FakeHTTP{Method: "POST", Host: "api.dropbox.com", Path: "/1/media/dropbox/" + filename,
 		Params: map[string]string{"locale": "en"}, t: t, ResponseData: js}
 	if received, err = db.Media(filename); err != nil {
 		t.Errorf("API error: %s", err)
@@ -359,7 +359,7 @@ func TestMetadata(t *testing.T) {
 
 	db = newDropbox(t)
 
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Metadata(path, false, false, "", "", 10); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -367,7 +367,7 @@ func TestMetadata(t *testing.T) {
 	}
 
 	fake.Params["list"] = "true"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Metadata(path, true, false, "", "", 10); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -375,7 +375,7 @@ func TestMetadata(t *testing.T) {
 	}
 
 	fake.Params["include_deleted"] = "true"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Metadata(path, true, true, "", "", 10); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -383,7 +383,7 @@ func TestMetadata(t *testing.T) {
 	}
 
 	fake.Params["file_limit"] = "20"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Metadata(path, true, true, "", "", 20); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -391,7 +391,7 @@ func TestMetadata(t *testing.T) {
 	}
 
 	fake.Params["rev"] = "12345"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Metadata(path, true, true, "", "12345", 20); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -399,7 +399,7 @@ func TestMetadata(t *testing.T) {
 	}
 
 	fake.Params["hash"] = "6789"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Metadata(path, true, true, "6789", "12345", 20); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -407,7 +407,7 @@ func TestMetadata(t *testing.T) {
 	}
 
 	fake.Params["file_limit"] = "10000"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Metadata(path, true, true, "6789", "12345", 0); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -415,7 +415,7 @@ func TestMetadata(t *testing.T) {
 	}
 
 	fake.Params["file_limit"] = strconv.FormatInt(int64(MetadataLimitMax), 10)
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Metadata(path, true, true, "6789", "12345", MetadataLimitMax+1); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -440,7 +440,7 @@ func TestMove(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	http.DefaultTransport = FakeHTTP{t: t, Method: "POST", Host: "api.dropbox.com", Path: "/1/fileops/move",
+	db.config.Transport = FakeHTTP{t: t, Method: "POST", Host: "api.dropbox.com", Path: "/1/fileops/move",
 		Params:       map[string]string{"root": "dropbox", "from_path": from, "to_path": to, "locale": "en"},
 		ResponseData: js}
 	if received, err = db.Move(from, to); err != nil {
@@ -465,7 +465,7 @@ func TestRestore(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	http.DefaultTransport = FakeHTTP{t: t, Method: "POST", Host: "api.dropbox.com", Path: "/1/restore/dropbox/" + path,
+	db.config.Transport = FakeHTTP{t: t, Method: "POST", Host: "api.dropbox.com", Path: "/1/restore/dropbox/" + path,
 		Params:       map[string]string{"rev": expected.Revision, "locale": "en"},
 		ResponseData: js}
 	if received, err = db.Restore(path, expected.Revision); err != nil {
@@ -496,7 +496,7 @@ func TestRevisions(t *testing.T) {
 
 	db = newDropbox(t)
 
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Revisions(path, 10); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, received) {
@@ -538,7 +538,7 @@ func TestSearch(t *testing.T) {
 	fake := FakeHTTP{Method: "GET", Host: "api.dropbox.com", Path: "/1/search/dropbox/" + dirname, t: t,
 		Params: map[string]string{"locale": "en", "query": "foo bar", "file_limit": "10", "include_deleted": "false"}, ResponseData: js}
 
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Search(dirname, "foo bar", 10, false); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, received) {
@@ -546,7 +546,7 @@ func TestSearch(t *testing.T) {
 	}
 
 	fake.Params["include_deleted"] = "true"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Search(dirname, "foo bar", 10, true); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, received) {
@@ -554,7 +554,7 @@ func TestSearch(t *testing.T) {
 	}
 
 	fake.Params["file_limit"] = strconv.FormatInt(int64(SearchLimitDefault), 10)
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Search(dirname, "foo bar", 0, true); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, received) {
@@ -585,7 +585,7 @@ func TestShares(t *testing.T) {
 	fake := FakeHTTP{Method: "POST", Host: "api.dropbox.com", Path: "/1/shares/dropbox/" + filename,
 		Params: map[string]string{"locale": "en"}, t: t, ResponseData: js}
 
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Shares(filename, false); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
@@ -593,7 +593,7 @@ func TestShares(t *testing.T) {
 	}
 
 	fake.Params["short_url"] = "true"
-	http.DefaultTransport = fake
+	db.config.Transport = fake
 	if received, err = db.Shares(filename, true); err != nil {
 		t.Errorf("API error: %s", err)
 	} else if !reflect.DeepEqual(expected, *received) {
