@@ -520,7 +520,7 @@ func (db *Dropbox) ThumbnailsToFile(src, dst, format, size string) (*Entry, erro
 
 // Download requests the file located at src, the specific revision may be given.
 // offset is used in case the download was interrupted.
-// A io.ReadCloser to get the file ans its size is returned.
+// A io.ReadCloser and the file size is returned.
 func (db *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64, error) {
 	var request *http.Request
 	var response *http.Response
@@ -545,7 +545,7 @@ func (db *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64, 
 	if response, err = db.client().Do(request); err != nil {
 		return nil, 0, err
 	}
-	if response.StatusCode == http.StatusOK {
+	if response.StatusCode == http.StatusOK || response.StatusCode == http.StatusPartialContent {
 		return response.Body, response.ContentLength, err
 	}
 	response.Body.Close()
