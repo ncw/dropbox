@@ -39,7 +39,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stacktic/oauth2"
+	"golang.org/x/oauth2"
 )
 
 // ErrNotAuth is the error returned when the OAuth token is not provided
@@ -183,8 +183,18 @@ type Dropbox struct {
 	APIURL        string // Normal API URL.
 	APIContentURL string // URL for transferring files.
 	APINotifyURL  string // URL for realtime notification.
-	config        *oauth2.Config
+	config        *oauth2.Options
 	token         *oauth2.Token
+}
+
+// ReadToken returns an existing token (oauth2.TokenStore interface)
+func (db *Dropbox) ReadToken() (*oauth2.Token, error) {
+	return db.token, nil
+}
+
+// WriteToken updates the token (oauth2.TokenStore interface)
+func (db *Dropbox) WriteToken(t *oauth2.Token) {
+	db.token = t
 }
 
 // NewDropbox returns a new Dropbox configured.
@@ -203,15 +213,23 @@ func NewDropbox() *Dropbox {
 // You have to register an application on https://www.dropbox.com/developers/apps.
 func (db *Dropbox) SetAppInfo(clientid, clientsecret string) error {
 	var err error
+	var authURL, tokenURL *url.URL
 
-	db.config, err = oauth2.NewConfig(
-		&oauth2.Options{
-			ClientID:     clientid,
-			ClientSecret: clientsecret,
-		},
-		"https://www.dropbox.com/1/oauth2/authorize",
-		"https://api.dropbox.com/1/oauth2/token")
-	return err
+	if authURL, err = url.Parse("https://www.dropbox.com/1/oauth2/authorize"); err != nil {
+		return err
+	}
+	if tokenURL, err = url.Parse("https://api.dropbox.com/1/oauth2/token"); err != nil {
+		return err
+	}
+
+	db.config = &oauth2.Options{
+		ClientID:     clientid,
+		ClientSecret: clientsecret,
+		AuthURL:      authURL,
+		TokenURL:     tokenURL,
+		TokenStore:   db,
+	}
+	return nil
 }
 
 // SetAccessToken sets access token to avoid calling Auth method.
@@ -226,9 +244,11 @@ func (db *Dropbox) AccessToken() string {
 
 func (db *Dropbox) client() *http.Client {
 	var t *oauth2.Transport
+	var err error
 
-	t = db.config.NewTransport()
-	t.SetToken(db.token)
+	if t, err = db.config.NewTransportFromTokenStore(db); err != nil {
+		return nil
+	}
 	return &http.Client{Transport: t}
 }
 
@@ -241,7 +261,7 @@ func (db *Dropbox) Auth() error {
 	fmt.Printf("Please visit:\n%s\nEnter the code: ",
 		db.config.AuthCodeURL("", "", ""))
 	fmt.Scanln(&code)
-	if t, err = db.config.NewTransportWithCode(code); err != nil {
+	if t, err = db.config.NewTransportFromCode(code); err != nil {
 		return err
 	}
 	db.token = t.Token()

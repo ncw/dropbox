@@ -13,7 +13,7 @@ Installation
 ------------
 This library depends on the oauth2 package, it can be installed with the go get command:
 
-    $ go get github.com/golang/oauth2
+    $ go get golang.org/x/oauth2
 
 This package can be installed with the go get command:
 
