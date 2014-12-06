@@ -39,12 +39,12 @@ import (
 
 var dirEntry = Entry{Size: "0 bytes", Revision: "1f477dd351f", ThumbExists: false, Bytes: 0,
 	Modified: DBTime(time.Date(2011, time.August, 10, 18, 21, 30, 0, time.UTC)),
-	Path:     "/testdir", IsDir: true, Icon: "folder", Root: "dropbox"}
+	Path:     "/testdir", IsDir: true, Icon: "folder", Root: "auto"}
 
 var fileEntry = Entry{Size: "0 bytes", Revision: "1f33043551f", ThumbExists: false, Bytes: 0,
 	Modified: DBTime(time.Date(2011, time.August, 10, 18, 21, 30, 0, time.UTC)),
 	Path:     "/testfile", IsDir: false, Icon: "page_white_text",
-	Root: "dropbox", MimeType: "text/plain"}
+	Root: "auto", MimeType: "text/plain"}
 
 type FakeHTTP struct {
 	t            *testing.T
@@ -173,7 +173,7 @@ func TestCopy(t *testing.T) {
 		Host:   "api.dropbox.com",
 		Path:   "/1/fileops/copy",
 		Params: map[string]string{
-			"root":      "dropbox",
+			"root":      "auto",
 			"from_path": from,
 			"to_path":   to,
 			"locale":    "en",
@@ -219,7 +219,7 @@ func TestCopyRef(t *testing.T) {
 		Transport: FakeHTTP{
 			Method:       "GET",
 			Host:         "api.dropbox.com",
-			Path:         "/1/copy_ref/dropbox/" + filename,
+			Path:         "/1/copy_ref/auto/" + filename,
 			t:            t,
 			Params:       map[string]string{"locale": "en"},
 			ResponseData: js,
@@ -253,7 +253,7 @@ func TestCreateFolder(t *testing.T) {
 			Host:   "api.dropbox.com",
 			Path:   "/1/fileops/create_folder",
 			Params: map[string]string{
-				"root":   "dropbox",
+				"root":   "auto",
 				"path":   foldername,
 				"locale": "en",
 			},
@@ -291,7 +291,7 @@ func TestDelete(t *testing.T) {
 			Host:   "api.dropbox.com",
 			Path:   "/1/fileops/delete",
 			Params: map[string]string{
-				"root":   "dropbox",
+				"root":   "auto",
 				"path":   path,
 				"locale": "en",
 			},
@@ -318,7 +318,7 @@ func TestFilesPut(t *testing.T) {
 
 	expected := Entry{Size: strconv.FormatInt(int64(len(content)), 10), Revision: "35e97029684fe", ThumbExists: false, Bytes: len(content),
 		Modified: DBTime(time.Date(2011, time.July, 19, 21, 55, 38, 0, time.UTC)), Path: "/" + filename, IsDir: false, Icon: "page_white_text",
-		Root: "dropbox", MimeType: "text/plain"}
+		Root: "auto", MimeType: "text/plain"}
 
 	js, err = json.Marshal(expected)
 	if err != nil {
@@ -329,7 +329,7 @@ func TestFilesPut(t *testing.T) {
 		t:      t,
 		Method: "PUT",
 		Host:   "api-content.dropbox.com",
-		Path:   "/1/files_put/dropbox/" + filename,
+		Path:   "/1/files_put/auto/" + filename,
 		Params: map[string]string{
 			"locale":    "en",
 			"overwrite": "false",
@@ -391,7 +391,7 @@ func TestMedia(t *testing.T) {
 		Transport: FakeHTTP{
 			Method:       "POST",
 			Host:         "api.dropbox.com",
-			Path:         "/1/media/dropbox/" + filename,
+			Path:         "/1/media/auto/" + filename,
 			Params:       map[string]string{"locale": "en"},
 			t:            t,
 			ResponseData: js,
@@ -423,7 +423,7 @@ func TestMetadata(t *testing.T) {
 		t:      t,
 		Method: "GET",
 		Host:   "api.dropbox.com",
-		Path:   "/1/metadata/dropbox/" + path,
+		Path:   "/1/metadata/auto/" + path,
 		Params: map[string]string{
 			"list":            "false",
 			"include_deleted": "false",
@@ -517,7 +517,7 @@ func TestMove(t *testing.T) {
 			Host:   "api.dropbox.com",
 			Path:   "/1/fileops/move",
 			Params: map[string]string{
-				"root":      "dropbox",
+				"root":      "auto",
 				"from_path": from,
 				"to_path":   to,
 				"locale":    "en",
@@ -552,7 +552,7 @@ func TestRestore(t *testing.T) {
 			t:      t,
 			Method: "POST",
 			Host:   "api.dropbox.com",
-			Path:   "/1/restore/dropbox/" + path,
+			Path:   "/1/restore/auto/" + path,
 			Params: map[string]string{
 				"rev":    expected.Revision,
 				"locale": "en",
@@ -586,7 +586,7 @@ func TestRevisions(t *testing.T) {
 		t:      t,
 		Method: "GET",
 		Host:   "api.dropbox.com",
-		Path:   "/1/revisions/dropbox/" + path,
+		Path:   "/1/revisions/auto/" + path,
 		Params: map[string]string{
 			"rev_limit": "10",
 			"locale":    "en",
@@ -630,7 +630,7 @@ func TestSearch(t *testing.T) {
 
 	expected := []Entry{Entry{Size: "0 bytes", Revision: "35c1f029684fe", ThumbExists: false, Bytes: 0,
 		Modified: DBTime(time.Date(2011, time.August, 10, 18, 21, 30, 0, time.UTC)), Path: "/" + dirname + "/dummyfile", IsDir: false, Icon: "page_white_text",
-		Root: "dropbox", MimeType: "text/plain"}}
+		Root: "auto", MimeType: "text/plain"}}
 	js, err := json.Marshal(expected)
 	if err != nil {
 		t.Fatalf("could not run test due to marshalling issue")
@@ -639,7 +639,7 @@ func TestSearch(t *testing.T) {
 	fake := FakeHTTP{
 		Method: "GET",
 		Host:   "api.dropbox.com",
-		Path:   "/1/search/dropbox/" + dirname,
+		Path:   "/1/search/auto/" + dirname,
 		t:      t,
 		Params: map[string]string{
 			"locale":          "en",
@@ -697,7 +697,7 @@ func TestShares(t *testing.T) {
 	fake := FakeHTTP{
 		Method:       "POST",
 		Host:         "api.dropbox.com",
-		Path:         "/1/shares/dropbox/" + filename,
+		Path:         "/1/shares/auto/" + filename,
 		Params:       map[string]string{"locale": "en"},
 		t:            t,
 		ResponseData: js,
