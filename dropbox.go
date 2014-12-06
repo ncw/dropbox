@@ -200,7 +200,7 @@ func (db *Dropbox) WriteToken(t *oauth2.Token) {
 // NewDropbox returns a new Dropbox configured.
 func NewDropbox() *Dropbox {
 	db := &Dropbox{
-		RootDirectory: "dropbox", // dropbox or sandbox.
+		RootDirectory: "auto", // auto (recommended), dropbox or sandbox.
 		Locale:        "en",
 		APIURL:        "https://api.dropbox.com/1",
 		APIContentURL: "https://api-content.dropbox.com/1",
