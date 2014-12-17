@@ -132,7 +132,7 @@ func TestAccountInfo(t *testing.T) {
 		t.Fatalf("could not run test marshalling issue")
 	}
 
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: FakeHTTP{
 			t:            t,
 			Method:       "GET",
@@ -181,7 +181,7 @@ func TestCopy(t *testing.T) {
 		ResponseData: js,
 	}
 	db = newDropbox(t)
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: fake,
 	}
 
@@ -215,7 +215,7 @@ func TestCopyRef(t *testing.T) {
 		t.Fatalf("could not run test due to marshalling issue")
 	}
 
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: FakeHTTP{
 			Method:       "GET",
 			Host:         "api.dropbox.com",
@@ -247,7 +247,7 @@ func TestCreateFolder(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: FakeHTTP{
 			Method: "POST",
 			Host:   "api.dropbox.com",
@@ -284,7 +284,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: FakeHTTP{
 			t:      t,
 			Method: "POST",
@@ -339,7 +339,7 @@ func TestFilesPut(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: fake,
 	}
 
@@ -387,7 +387,7 @@ func TestMedia(t *testing.T) {
 		t.Fatalf("could not run test due to marshalling issue: %s", err)
 	}
 
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: FakeHTTP{
 			Method:       "POST",
 			Host:         "api.dropbox.com",
@@ -433,7 +433,7 @@ func TestMetadata(t *testing.T) {
 		ResponseData: js,
 	}
 	db = newDropbox(t)
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: fake,
 	}
 
@@ -510,7 +510,7 @@ func TestMove(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: FakeHTTP{
 			t:      t,
 			Method: "POST",
@@ -547,7 +547,7 @@ func TestRestore(t *testing.T) {
 	}
 
 	db = newDropbox(t)
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: FakeHTTP{
 			t:      t,
 			Method: "POST",
@@ -594,7 +594,7 @@ func TestRevisions(t *testing.T) {
 		ResponseData: js,
 	}
 	db = newDropbox(t)
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: fake,
 	}
 
@@ -649,7 +649,7 @@ func TestSearch(t *testing.T) {
 		},
 		ResponseData: js,
 	}
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: fake,
 	}
 
@@ -702,7 +702,7 @@ func TestShares(t *testing.T) {
 		t:            t,
 		ResponseData: js,
 	}
-	db.config.Client = &http.Client{
+	http.DefaultClient = &http.Client{
 		Transport: fake,
 	}
 
