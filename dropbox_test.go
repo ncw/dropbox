@@ -719,3 +719,65 @@ func TestShares(t *testing.T) {
 		t.Errorf("got %#v expected %#v", *received, expected)
 	}
 }
+
+func TestLatestCursor(t *testing.T) {
+	tab := []struct {
+		prefix    string
+		mediaInfo bool
+	}{
+		{
+			prefix:    "",
+			mediaInfo: false,
+		},
+		{
+			prefix:    "/some",
+			mediaInfo: false,
+		},
+		{
+			prefix:    "",
+			mediaInfo: true,
+		},
+		{
+			prefix:    "/some",
+			mediaInfo: true,
+		},
+	}
+
+	expected := Cursor{Cursor: "some"}
+	cur, err := json.Marshal(expected)
+	if err != nil {
+		t.Fatal("Failed to JSON encode Cursor")
+	}
+
+	for _, testCase := range tab {
+		db := newDropbox(t)
+		fake := FakeHTTP{
+			Method: "POST",
+			Host:   "api.dropbox.com",
+			Path:   "/1/delta/latest_cursor",
+			t:      t,
+			Params: map[string]string{
+				"locale": "en",
+			},
+			ResponseData: cur,
+		}
+
+		if testCase.prefix != "" {
+			fake.Params["path_prefix"] = testCase.prefix
+		}
+
+		if testCase.mediaInfo {
+			fake.Params["include_media_info"] = "true"
+		}
+
+		http.DefaultClient = &http.Client{
+			Transport: fake,
+		}
+
+		if received, err := db.LatestCursor(testCase.prefix, testCase.mediaInfo); err != nil {
+			t.Errorf("API error: %s", err)
+		} else if !reflect.DeepEqual(expected, *received) {
+			t.Errorf("got %#v expected %#v", *received, expected)
+		}
+	}
+}

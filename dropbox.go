@@ -68,7 +68,7 @@ type CopyRef struct {
 type DeltaPage struct {
 	Reset   bool         // if true the local state must be cleared.
 	HasMore bool         // if true an other call to delta should be made.
-	Cursor  string       // Tag of the current state.
+	Cursor               // Tag of the current state.
 	Entries []DeltaEntry // List of changed entries.
 }
 
@@ -89,6 +89,10 @@ type ChunkUploadResponse struct {
 	UploadID string `json:"upload_id"` // Unique ID of this upload.
 	Offset   int    `json:"offset"`    // Size in bytes of already sent data.
 	Expires  DBTime `json:"expires"`   // Expiration time of this upload.
+}
+
+type Cursor struct {
+	Cursor string `json:"cursor"`
 }
 
 // Format of reply when http error code is not 200.
@@ -684,8 +688,8 @@ func (db *Dropbox) Delta(cursor, pathPrefix string) (*DeltaPage, error) {
 	type deltaPageParser struct {
 		Reset   bool                `json:"reset"`    // if true the local state must be cleared.
 		HasMore bool                `json:"has_more"` // if true an other call to delta should be made.
-		Cursor  string              `json:"cursor"`   // Tag of the current state.
-		Entries [][]json.RawMessage `json:"entries"`  // List of changed entries.
+		Cursor                      // Tag of the current state.
+		Entries [][]json.RawMessage `json:"entries"` // List of changed entries.
 	}
 	var dpp deltaPageParser
 
@@ -853,4 +857,22 @@ func (db *Dropbox) Move(src, dst string) (*Entry, error) {
 			"from_path": {src},
 			"to_path":   {dst}}, &rv)
 	return &rv, err
+}
+
+func (db *Dropbox) LatestCursor(prefix string, mediaInfo bool) (*Cursor, error) {
+	var (
+		params = &url.Values{}
+		cur    Cursor
+	)
+
+	if prefix != "" {
+		params.Set("path_prefix", prefix)
+	}
+
+	if mediaInfo {
+		params.Set("include_media_info", "true")
+	}
+
+	err := db.doRequest("POST", "delta/latest_cursor", params, &cur)
+	return &cur, err
 }
