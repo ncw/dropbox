@@ -235,6 +235,10 @@ func (db *Dropbox) AccessToken() string {
 	return db.token.AccessToken
 }
 
+func (db *Dropbox) SetRedirectUrl(url string) {
+	db.config.RedirectURL = url
+}
+
 func (db *Dropbox) client() *http.Client {
 	return db.config.Client(db.ctx, db.token)
 }
@@ -242,15 +246,20 @@ func (db *Dropbox) client() *http.Client {
 // Auth displays the URL to authorize this application to connect to your account.
 func (db *Dropbox) Auth() error {
 	var code string
-	var t *oauth2.Token
-	var err error
 
 	fmt.Printf("Please visit:\n%s\nEnter the code: ",
 		db.config.AuthCodeURL(""))
 	fmt.Scanln(&code)
-	if t, err = db.config.Exchange(oauth2.NoContext, code); err != nil {
+	return db.AuthCode(code)
+}
+
+// Authorizes the given code
+func (db *Dropbox) AuthCode(code string) error {
+	t, err := db.config.Exchange(oauth2.NoContext, code)
+	if err != nil {
 		return err
 	}
+
 	db.token = t
 	db.token.TokenType = "Bearer"
 	return nil
