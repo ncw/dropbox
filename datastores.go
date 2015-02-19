@@ -261,6 +261,11 @@ func (ds *Datastore) Close() {
 	close(ds.changesQueue)
 }
 
+// Delete deletes the datastore.
+func (ds *Datastore) Delete() error {
+	return ds.manager.DeleteDatastore(ds.info.ID)
+}
+
 // SetTitle sets the datastore title to the given string.
 func (ds *Datastore) SetTitle(t string) error {
 	if len(ds.info.title) == 0 {
