@@ -695,10 +695,13 @@ func TestShares(t *testing.T) {
 		t.Fatalf("could not run test due to marshalling issue")
 	}
 	fake := FakeHTTP{
-		Method:       "POST",
-		Host:         "api.dropbox.com",
-		Path:         "/1/shares/auto/" + filename,
-		Params:       map[string]string{"locale": "en"},
+		Method: "POST",
+		Host:   "api.dropbox.com",
+		Path:   "/1/shares/auto/" + filename,
+		Params: map[string]string{
+			"locale":    "en",
+			"short_url": "false",
+		},
 		t:            t,
 		ResponseData: js,
 	}

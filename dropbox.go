@@ -645,9 +645,7 @@ func (db *Dropbox) Shares(path string, shortURL bool) (*Link, error) {
 	var rv Link
 	var params *url.Values
 
-	if shortURL {
-		params = &url.Values{"short_url": {strconv.FormatBool(shortURL)}}
-	}
+	params = &url.Values{"short_url": {strconv.FormatBool(shortURL)}}
 	act := strings.Join([]string{"shares", db.RootDirectory, path}, "/")
 	err := db.doRequest("POST", act, params, &rv)
 	return &rv, err
