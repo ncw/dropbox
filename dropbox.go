@@ -180,12 +180,34 @@ type Entry struct {
 	Size        string    `json:"size,omitempty"`         // Size of the file humanized/localized.
 	ThumbExists bool      `json:"thumb_exists,omitempty"` // true if a thumbnail is available for this entry.
 	Modifier    *Modifier `json:"modifier"`               // last user to edit the file if in a shared folder
+	ParentSharedFolderId string `json:"parent_shared_folder_id,omitempty"`
 }
 
 // Link for sharing a file.
 type Link struct {
 	Expires DBTime `json:"expires"` // Expiration date of this link.
 	URL     string `json:"url"`     // URL to share.
+}
+
+type User struct {
+	Uid         int64  `json:"uid"`
+	DisplayName string `json:"display_name"`
+}
+
+type SharedFolderMember struct {
+	User       User   `json:"user"`
+	Active     bool   `json:"active"`
+	AccessType string `json:"access_type"`
+}
+
+type SharedFolder struct {
+	SharedFolderId   string               `json:"shared_folder_id"`
+	SharedFolderName string               `json:"shared_folder_name"`
+	Path             string               `json:"path"`
+	AccessType       string               `json:"access_type"`
+	SharedLinkPolicy string               `json:"shared_link_policy"`
+	Owner            User                 `json:"owner"`
+	Membership       []SharedFolderMember `json:"membership"`
 }
 
 // Dropbox client.
@@ -896,4 +918,13 @@ func (db *Dropbox) LatestCursor(prefix string, mediaInfo bool) (*Cursor, error) 
 
 	err := db.doRequest("POST", "delta/latest_cursor", params, &cur)
 	return &cur, err
+}
+
+func (db *Dropbox) SharedFolder(sharedFolderId string) (pSharedFolder *SharedFolder, err error) {
+	var sharedFolder SharedFolder
+	err = db.doRequest("GET", "/shared_folders/" + sharedFolderId, nil, &sharedFolder)
+	if err == nil {
+		pSharedFolder = &sharedFolder
+	}
+	return
 }
