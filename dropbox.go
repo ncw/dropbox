@@ -39,6 +39,7 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/net/context"
 	"golang.org/x/oauth2"
 )
 
@@ -189,6 +190,7 @@ type Dropbox struct {
 	APINotifyURL  string // URL for realtime notification.
 	config        *oauth2.Config
 	token         *oauth2.Token
+	ctx           context.Context
 }
 
 // NewDropbox returns a new Dropbox configured.
@@ -199,6 +201,7 @@ func NewDropbox() *Dropbox {
 		APIURL:        "https://api.dropbox.com/1",
 		APIContentURL: "https://api-content.dropbox.com/1",
 		APINotifyURL:  "https://api-notify.dropbox.com/1",
+		ctx:           oauth2.NoContext,
 	}
 	return db
 }
@@ -223,13 +226,17 @@ func (db *Dropbox) SetAccessToken(accesstoken string) {
 	db.token = &oauth2.Token{AccessToken: accesstoken}
 }
 
+func (db *Dropbox) SetContext(ctx context.Context) {
+	db.ctx = ctx
+}
+
 // AccessToken returns the OAuth access token.
 func (db *Dropbox) AccessToken() string {
 	return db.token.AccessToken
 }
 
 func (db *Dropbox) client() *http.Client {
-	return db.config.Client(oauth2.NoContext, db.token)
+	return db.config.Client(db.ctx, db.token)
 }
 
 // Auth displays the URL to authorize this application to connect to your account.
