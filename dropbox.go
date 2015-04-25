@@ -92,6 +92,7 @@ type ChunkUploadResponse struct {
 	Expires  DBTime `json:"expires"`   // Expiration time of this upload.
 }
 
+// Cursor represents the tag of a server state at a given moment.
 type Cursor struct {
 	Cursor string `json:"cursor"`
 }
@@ -157,30 +158,30 @@ func (dbt DBTime) MarshalJSON() ([]byte, error) {
 	return json.Marshal(time.Time(dbt).Format(DateFormat))
 }
 
-// Represents the user who made a change on a particular file
+// Modifier represents the user who made a change on a particular file
 type Modifier struct {
-	Uid         int64  `json:"uid"`
+	UID         int64  `json:"uid"`
 	DisplayName string `json:"display_name"`
 }
 
 // Entry represents the metadata of a file or folder.
 type Entry struct {
-	Bytes       int       `json:"bytes,omitempty"`        // Size of the file in bytes.
-	ClientMtime DBTime    `json:"client_mtime,omitempty"` // Modification time set by the client when added.
-	Contents    []Entry   `json:"contents,omitempty"`     // List of children for a directory.
-	Hash        string    `json:"hash,omitempty"`         // Hash of this entry.
-	Icon        string    `json:"icon,omitempty"`         // Name of the icon displayed for this entry.
-	IsDeleted   bool      `json:"is_deleted,omitempty"`   // true if this entry was deleted.
-	IsDir       bool      `json:"is_dir,omitempty"`       // true if this entry is a directory.
-	MimeType    string    `json:"mime_type,omitempty"`    // MimeType of this entry.
-	Modified    DBTime    `json:"modified,omitempty"`     // Date of last modification.
-	Path        string    `json:"path,omitempty"`         // Absolute path of this entry.
-	Revision    string    `json:"rev,omitempty"`          // Unique ID for this file revision.
-	Root        string    `json:"root,omitempty"`         // dropbox or sandbox.
-	Size        string    `json:"size,omitempty"`         // Size of the file humanized/localized.
-	ThumbExists bool      `json:"thumb_exists,omitempty"` // true if a thumbnail is available for this entry.
-	Modifier    *Modifier `json:"modifier"`               // last user to edit the file if in a shared folder
-	ParentSharedFolderId string `json:"parent_shared_folder_id,omitempty"`
+	Bytes                int       `json:"bytes,omitempty"`        // Size of the file in bytes.
+	ClientMtime          DBTime    `json:"client_mtime,omitempty"` // Modification time set by the client when added.
+	Contents             []Entry   `json:"contents,omitempty"`     // List of children for a directory.
+	Hash                 string    `json:"hash,omitempty"`         // Hash of this entry.
+	Icon                 string    `json:"icon,omitempty"`         // Name of the icon displayed for this entry.
+	IsDeleted            bool      `json:"is_deleted,omitempty"`   // true if this entry was deleted.
+	IsDir                bool      `json:"is_dir,omitempty"`       // true if this entry is a directory.
+	MimeType             string    `json:"mime_type,omitempty"`    // MimeType of this entry.
+	Modified             DBTime    `json:"modified,omitempty"`     // Date of last modification.
+	Path                 string    `json:"path,omitempty"`         // Absolute path of this entry.
+	Revision             string    `json:"rev,omitempty"`          // Unique ID for this file revision.
+	Root                 string    `json:"root,omitempty"`         // dropbox or sandbox.
+	Size                 string    `json:"size,omitempty"`         // Size of the file humanized/localized.
+	ThumbExists          bool      `json:"thumb_exists,omitempty"` // true if a thumbnail is available for this entry.
+	Modifier             *Modifier `json:"modifier"`               // last user to edit the file if in a shared folder
+	ParentSharedFolderID string    `json:"parent_shared_folder_id,omitempty"`
 }
 
 // Link for sharing a file.
@@ -189,19 +190,22 @@ type Link struct {
 	URL     string `json:"url"`     // URL to share.
 }
 
+// User represents a Dropbox user.
 type User struct {
-	Uid         int64  `json:"uid"`
+	UID         int64  `json:"uid"`
 	DisplayName string `json:"display_name"`
 }
 
+// SharedFolderMember represents access right associated with a Dropbox user.
 type SharedFolderMember struct {
 	User       User   `json:"user"`
 	Active     bool   `json:"active"`
 	AccessType string `json:"access_type"`
 }
 
+// SharedFolder reprensents a directory with a specific sharing policy.
 type SharedFolder struct {
-	SharedFolderId   string               `json:"shared_folder_id"`
+	SharedFolderID   string               `json:"shared_folder_id"`
 	SharedFolderName string               `json:"shared_folder_name"`
 	Path             string               `json:"path"`
 	AccessType       string               `json:"access_type"`
@@ -255,6 +259,7 @@ func (db *Dropbox) SetAccessToken(accesstoken string) {
 	db.token = &oauth2.Token{AccessToken: accesstoken}
 }
 
+// SetContext allow to set a custom context.
 func (db *Dropbox) SetContext(ctx context.Context) {
 	db.ctx = ctx
 }
@@ -264,7 +269,8 @@ func (db *Dropbox) AccessToken() string {
 	return db.token.AccessToken
 }
 
-func (db *Dropbox) SetRedirectUrl(url string) {
+// SetRedirectURL updates the configuration with the given redirection URL.
+func (db *Dropbox) SetRedirectURL(url string) {
 	db.config.RedirectURL = url
 }
 
@@ -282,7 +288,7 @@ func (db *Dropbox) Auth() error {
 	return db.AuthCode(code)
 }
 
-// Authorizes the given code
+// AuthCode gets the token associated with the given code.
 func (db *Dropbox) AuthCode(code string) error {
 	t, err := db.config.Exchange(oauth2.NoContext, code)
 	if err != nil {
@@ -902,6 +908,7 @@ func (db *Dropbox) Move(src, dst string) (*Entry, error) {
 	return &rv, err
 }
 
+// LatestCursor returns the latest cursor without fetching any data.
 func (db *Dropbox) LatestCursor(prefix string, mediaInfo bool) (*Cursor, error) {
 	var (
 		params = &url.Values{}
@@ -920,11 +927,16 @@ func (db *Dropbox) LatestCursor(prefix string, mediaInfo bool) (*Cursor, error) 
 	return &cur, err
 }
 
-func (db *Dropbox) SharedFolder(sharedFolderId string) (pSharedFolder *SharedFolder, err error) {
-	var sharedFolder SharedFolder
-	err = db.doRequest("GET", "/shared_folders/" + sharedFolderId, nil, &sharedFolder)
-	if err == nil {
-		pSharedFolder = &sharedFolder
+// SharedFolders returns the list of allowed shared folders.
+func (db *Dropbox) SharedFolders(sharedFolderID string) ([]SharedFolder, error) {
+	var sharedFolders []SharedFolder
+	var err error
+
+	if sharedFolderID != "" {
+		sharedFolders = make([]SharedFolder, 1)
+		err = db.doRequest("GET", "/shared_folders/"+sharedFolderID, nil, &sharedFolders[0])
+	} else {
+		err = db.doRequest("GET", "/shared_folders/", nil, &sharedFolders)
 	}
-	return
+	return sharedFolders, err
 }
