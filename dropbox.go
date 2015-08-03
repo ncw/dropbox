@@ -88,7 +88,7 @@ type DeltaPoll struct {
 // ChunkUploadResponse represents the reply of chunked_upload.
 type ChunkUploadResponse struct {
 	UploadID string `json:"upload_id"` // Unique ID of this upload.
-	Offset   int    `json:"offset"`    // Size in bytes of already sent data.
+	Offset   int64  `json:"offset"`    // Size in bytes of already sent data.
 	Expires  DBTime `json:"expires"`   // Expiration time of this upload.
 }
 
@@ -166,7 +166,7 @@ type Modifier struct {
 
 // Entry represents the metadata of a file or folder.
 type Entry struct {
-	Bytes                int       `json:"bytes,omitempty"`        // Size of the file in bytes.
+	Bytes                int64     `json:"bytes,omitempty"`        // Size of the file in bytes.
 	ClientMtime          DBTime    `json:"client_mtime,omitempty"` // Modification time set by the client when added.
 	Contents             []Entry   `json:"contents,omitempty"`     // List of children for a directory.
 	Hash                 string    `json:"hash,omitempty"`         // Hash of this entry.
@@ -572,7 +572,7 @@ func (db *Dropbox) ThumbnailsToFile(src, dst, format, size string) (*Entry, erro
 // Download requests the file located at src, the specific revision may be given.
 // offset is used in case the download was interrupted.
 // A io.ReadCloser and the file size is returned.
-func (db *Dropbox) Download(src, rev string, offset int) (io.ReadCloser, int64, error) {
+func (db *Dropbox) Download(src, rev string, offset int64) (io.ReadCloser, int64, error) {
 	var request *http.Request
 	var response *http.Response
 	var rawurl string
@@ -613,7 +613,7 @@ func (db *Dropbox) DownloadToFileResume(src, dst, rev string) error {
 	var input io.ReadCloser
 	var fi os.FileInfo
 	var fd *os.File
-	var offset int
+	var offset int64
 	var err error
 
 	if fd, err = os.OpenFile(dst, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); err != nil {
@@ -623,7 +623,7 @@ func (db *Dropbox) DownloadToFileResume(src, dst, rev string) error {
 	if fi, err = fd.Stat(); err != nil {
 		return err
 	}
-	offset = int(fi.Size())
+	offset = fi.Size()
 
 	if input, _, err = db.Download(src, rev, offset); err != nil {
 		return err

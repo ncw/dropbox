@@ -199,7 +199,7 @@ func (db *Dropbox) DownloadAES(key []byte, src, rev string, offset int) (io.Read
 	var size int64
 	var err error
 
-	if in, size, err = db.Download(src, rev, offset); err != nil {
+	if in, size, err = db.Download(src, rev, int64(offset)); err != nil {
 		return nil, err
 	}
 	return NewAESDecrypterReader(key, in, int(size))

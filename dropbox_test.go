@@ -316,7 +316,7 @@ func TestFilesPut(t *testing.T) {
 	filename = "test.txt"
 	content = []byte("file content")
 
-	expected := Entry{Size: strconv.FormatInt(int64(len(content)), 10), Revision: "35e97029684fe", ThumbExists: false, Bytes: len(content),
+	expected := Entry{Size: strconv.FormatInt(int64(len(content)), 10), Revision: "35e97029684fe", ThumbExists: false, Bytes: int64(len(content)),
 		Modified: DBTime(time.Date(2011, time.July, 19, 21, 55, 38, 0, time.UTC)), Path: "/" + filename, IsDir: false, Icon: "page_white_text",
 		Root: "auto", MimeType: "text/plain"}
 
