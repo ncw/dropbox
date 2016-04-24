@@ -832,6 +832,7 @@ func (db *Dropbox) Metadata(src string, list bool, includeDeleted bool, hash, re
 		params.Set("hash", hash)
 	}
 
+	src = strings.Trim(src, "/")
 	act := strings.Join([]string{"metadata", db.RootDirectory, src}, "/")
 	err := db.doRequest("GET", act, params, &rv)
 	return &rv, err
