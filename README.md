@@ -4,6 +4,10 @@ Go client library for the Dropbox core and Datastore API with support for upload
 
 Support of the Datastore API should be considered as a beta version.
 
+*NB* this module is for the v1 API which is due to be turned off on 28
+June 2017.  For the v2 API [dropbox have made a a new go
+SDK themselves](https://github.com/dropbox/dropbox-sdk-go-unofficial/).
+
 Prerequisite
 ------------
 To use this library, you must have a valid client ID (app key) and client secret (app secret) provided by Dropbox.<br>
